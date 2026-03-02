@@ -2,4 +2,4 @@
 
 This SLAM project uses a jetson nano with sensors, including lidar
 
-<img width="1422" height="808" alt="image" src="https://github.com/user-attachments/assets/764f8a71-e502-4a46-bbb0-8e341e06d3a1" />
+<img width="1407" height="808" alt="block-diagram" src="https://github.com/user-attachments/assets/d59ceb54-d4b3-4b98-83da-a3ec2ed33611" />
