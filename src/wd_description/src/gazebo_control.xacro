@@ -5,13 +5,13 @@
         <plugin name="gz::sim::systems::DiffDrive" filename="gz-sim-diff-drive-system">
 
             <!-- Wheel Information -->
-            <left_joint>left_wheel_joint</left_joint>
-            <right_joint>right_wheel_joint</right_joint>
-            <wheel_separation>0.35</wheel_separation>
-            <wheel_radius>0.05</wheel_radius>
+            <left_joint>wheel_left_joint</left_joint>
+            <right_joint>wheel_right_joint</right_joint>
+            <wheel_separation>0.196</wheel_separation>
+            <wheel_radius>0.0325</wheel_radius>
 
             <!-- Input -->
-            <topic>cmd_vel</topic>
+            <topic>/cmd_vel</topic>
 
             <!-- Output -->
             <frame_id>odom</frame_id>
@@ -24,8 +24,8 @@
 
         <plugin name="gz::sim::systems::JointStatePublisher" filename="gz-sim-joint-state-publisher-system">
             <topic>joint_states</topic>
-            <joint_name>left_wheel_joint</joint_name>
-            <joint_name>right_wheel_joint</joint_name>
+            <joint_name>wheel_left_joint</joint_name>
+            <joint_name>wheel_right_joint</joint_name>
         </plugin>
     </gazebo>
 
