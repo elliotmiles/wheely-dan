@@ -13,7 +13,7 @@ find_package(ament_cmake REQUIRED)
 
 # required for python file, i.e. not compiled
 install(
-  DIRECTORY launch
+  DIRECTORY launch config worlds
   DESTINATION share/${PROJECT_NAME}
 )
 
