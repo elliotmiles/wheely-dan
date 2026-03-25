@@ -276,7 +276,7 @@
 
         <collision>
         <geometry>
-            <mesh filename="file:///home/logicbomb/Projects/SLAM/wheely-dan/src/wd_description/meshes/wheel_left_link.stl" scale="0.001 0.001 0.001"/>
+            <sphere radius="0.0325"/>
         </geometry>
         </collision>
 
@@ -295,7 +295,7 @@
         <child link="wheel_left_link"/>
         <origin xyz="0 0.098 0.0145"/>
         <axis xyz="0 1 0"/>
-        <limit effort="0.05" velocity="10.0"/>
+        <limit effort="100.0" velocity="1000.0"/>
     </joint>
 
     <!-- ========= WHEEL R ========= -->
@@ -310,7 +310,7 @@
 
         <collision>
         <geometry>
-            <mesh filename="file:///home/logicbomb/Projects/SLAM/wheely-dan/src/wd_description/meshes/wheel_right_link.stl" scale="0.001 0.001 0.001"/>
+            <sphere radius="0.0325"/>
         </geometry>
         </collision>
 
@@ -329,7 +329,7 @@
         <child link="wheel_right_link"/>
         <origin xyz="0 -0.098 0.0145"/>
         <axis xyz="0 1 0"/>
-        <limit effort="0.05" velocity="10.0"/>
+        <limit effort="100.0" velocity="1000.0"/>
     </joint>
 
 
