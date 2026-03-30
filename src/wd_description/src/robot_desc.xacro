@@ -53,7 +53,7 @@
         </geometry>
         </collision>
 
-        <xacro:inertial_box mass="0.5" x="0.225" y="0.17" z="0.088">
+        <xacro:inertial_box mass="1.5" x="0.225" y="0.17" z="0.088">
             <origin xyz="0.1125 0 0.044" rpy="0 0 0"/>
         </xacro:inertial_box>
     </link>
@@ -466,37 +466,6 @@
     <gazebo reference="caster_wheel_right_link">
         <mu1 value="0.0"/>
         <mu2 value="0.0"/>
-    </gazebo>
-
-    <gazebo>
-        <plugin
-         filename="gz-sim-sensors-system"
-         name="gz::sim::systems::Sensors">
-         <render_engine>ogre2</render_engine>
-        </plugin>
-    </gazebo>
-
-    <gazebo reference="lidar_link">
-        <sensor name="gpu_lidar" type="gpu_lidar">
-            <pose> 0 0 0 0 0 0 </pose>
-            <visualize>true</visualize>
-            <update_rate>10</update_rate>
-            <lidar>
-                <scan>
-                    <horizontal>
-                        <samples>360</samples>
-                        <min_angle>-3.14</min_angle>
-                        <max_angle>3.14</max_angle>
-                    </horizontal>
-                </scan>
-                <range>
-                    <min>0.3</min>
-                    <max>12</max>
-                </range>
-            </lidar>
-            <topic>scan</topic>
-            <gz_frame_id>lidar_link</gz_frame_id>
-        </sensor>
     </gazebo>
 
 </robot>
