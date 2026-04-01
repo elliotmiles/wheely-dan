@@ -243,7 +243,6 @@
         </geometry>
         </collision>
 
-        <!-- done -->
         <inertial>
             <origin xyz="0 0 0.0275" rpy="0 0 0"/>
             <mass value="0.187"/>
@@ -272,6 +271,7 @@
         </visual>
 
         <collision>
+        <origin xyz="0 0.003 0" rpy="0 0 0"/>
         <geometry>
             <sphere radius="0.0325"/>
         </geometry>
@@ -290,7 +290,7 @@
     <joint name="wheel_left_joint" type="continuous">
         <parent link="base_link"/>
         <child link="wheel_left_link"/>
-        <origin xyz="0 0.098 0.0145"/>
+        <origin xyz="0 0.099 0.0125"/>
         <axis xyz="0 1 0"/>
     </joint>
 
@@ -305,6 +305,7 @@
         </visual>
 
         <collision>
+        <origin xyz="0 -0.003 0" rpy="0 0 0"/>
         <geometry>
             <sphere radius="0.0325"/>
         </geometry>
@@ -323,7 +324,7 @@
     <joint name="wheel_right_joint" type="continuous">
         <parent link="base_link"/>
         <child link="wheel_right_link"/>
-        <origin xyz="0 -0.098 0.0145"/>
+        <origin xyz="0 -0.099 0.0125"/>
         <axis xyz="0 1 0"/>
     </joint>
 
