@@ -1,8 +1,18 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro"  name="robot">
 
+    <xacro:arg name="use_ros2_control" default="true"/>
+
     <xacro:include filename="robot_desc.xacro" />
-    <xacro:include filename="gazebo_control.xacro"/>
-    <xacro:include filename="gazebo_lidar.xacro"/>
+
+    <!-- Switch between ros2_control and Gazebo integrated diff-drive control -->
+    <xacro:if value="$(arg use_ros2_control)">
+        <xacro:include filename="$(find wd_control)/urdf/ros2_control.xacro"/>
+    </xacro:if>
+    <xacro:unless value="$(arg use_ros2_control)">
+        <xacro:include filename="$(find wd_simulation)/urdf/gazebo_control.xacro"/>
+    </xacro:unless>
+
+    <xacro:include filename="$(find wd_simulation)/urdf/gazebo_lidar.xacro"/>
 
 </robot>
