@@ -17,7 +17,7 @@ from launch.actions import LogInfo
 def generate_launch_description():
 
 
-    # Include the robot_state_publisher launch file, provided by our own package. Force sim time to be enabled
+    # Include the robot_state_publisher launch file and force sim time to be enabled
 
     package_name='wd_simulation'
 
@@ -82,7 +82,18 @@ def generate_launch_description():
         arguments=["joint_broad"],
     )
 
-    # Launch them all!
+    twist_mux_config = os.path.join(get_package_share_directory('wd_control'),
+        'config', 'twist_mux.yaml')
+    twist_mux = Node(
+        package='twist_mux',
+        executable='twist_mux',
+        output='screen',
+        remappings={('/cmd_vel_out', '/cmd_vel')},
+        parameters=[
+            {'use_sim_time': False},
+            twist_mux_config])
+
+    # Launch
     return LaunchDescription([
         DeclareLaunchArgument(
             'use_ros2_control',
@@ -98,4 +109,5 @@ def generate_launch_description():
         ros_gz_bridge,
         diff_drive_spawner,
         joint_broad_spawner,
+        twist_mux
     ])
