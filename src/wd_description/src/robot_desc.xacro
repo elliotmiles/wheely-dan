@@ -457,6 +457,36 @@
         <axis xyz="0 1 0"/>
     </joint>
 
+    <!-- ========= DEPTH CAMERA ========= -->
+
+    <link name="depth_camera_link">
+        <visual>
+        <geometry>
+            <box size="0.3 0.3 0.15"/>
+        </geometry>
+        <material name="dark_grey"/>
+        </visual>
+
+        <collision>
+        <geometry>
+            <box size="0.3 0.3 0.15"/>
+        </geometry>
+        </collision>
+
+        <inertial>
+            <mass value="0.072"/>
+            <inertia ixx="0.000004" ixy="0" ixz="0"
+                    iyy="0.000024" iyz="0"
+                    izz="0.000025"/>
+        </inertial>
+    </link>
+
+    <joint name="depth_camera_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="depth_camera_link"/>
+        <origin xyz="0.056175 0 0.095"/>
+    </joint>
+
     <!-- ========= GAZEBO SETTINGS ========= -->
 
     <gazebo reference="caster_wheel_left_link">

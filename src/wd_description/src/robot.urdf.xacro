@@ -14,5 +14,6 @@
     </xacro:unless>
 
     <xacro:include filename="$(find wd_simulation)/urdf/gazebo_lidar.xacro"/>
+    <xacro:include filename="$(find wd_simulation)/urdf/gazebo_depth_camera.xacro"/>
 
 </robot>

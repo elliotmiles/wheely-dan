@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <gazebo reference="depth_camera_link">
+
+      <sensor name="$realsense_d435i" type="depth_camera">
+        <pose>0 0 0 0 0 0</pose>
+        <always_on>true</always_on>
+        <update_rate>30</update_rate>
+        <visualize>false</visualize>
+
+        <camera name="depth">
+          <!-- D435i: 87° H × 58° V depth FoV -->
+          <horizontal_fov>1.5184</horizontal_fov>
+
+          <image>
+            <width>640</width>
+            <height>480</height>
+            <format>R_FLOAT32</format>
+          </image>
+
+          <clip>
+            <near>0.1</near>
+            <far>10.0</far>
+          </clip>
+
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.003</stddev>
+          </noise>
+        </camera>
+
+        <plugin
+          filename="gz-sim-depth-camera-system"
+          name="gz::sim::systems::DepthCamera">
+          <topic>/camera/depth/image_raw</topic>
+          <point_cloud_topic>/camera/depth/points</point_cloud_topic>
+        </plugin>
+
+      </sensor>
+    </gazebo>
+
+</robot>
