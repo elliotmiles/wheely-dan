@@ -82,7 +82,7 @@
             <stddev>0.007</stddev>
           </noise>
         </camera>
-        <topic>camera/depth/image_raw</topic>
+        <topic>camera/depth</topic>
         <gz_frame_id>depth_camera_link</gz_frame_id>
       </sensor>
     </gazebo>
