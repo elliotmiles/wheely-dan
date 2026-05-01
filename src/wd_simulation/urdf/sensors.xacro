@@ -38,7 +38,7 @@
         <pose>0 0 0 0 0 0</pose>
         <visualize>false</visualize>
         <always_on>1</always_on>
-        <update_rate>30</update_rate>
+        <update_rate>15</update_rate>
         <camera name="rs_front">
           <horizontal_fov>1.50098</horizontal_fov>
           <lens>
@@ -68,12 +68,12 @@
           </image>
           <clip>
             <near>0.01</near>
-            <far>300</far>
+            <far>15</far>
           </clip>
           <depth_camera>
             <clip>
               <near>0.1</near>
-              <far>10</far>
+              <far>6</far>
             </clip>
           </depth_camera>
           <noise>
@@ -83,7 +83,7 @@
           </noise>
         </camera>
         <topic>camera/depth</topic>
-        <gz_frame_id>depth_camera_link</gz_frame_id>
+        <gz_frame_id>depth_camera_link_optical</gz_frame_id>
       </sensor>
     </gazebo>
 

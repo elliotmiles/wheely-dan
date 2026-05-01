@@ -80,7 +80,11 @@ def generate_launch_description():
     joint_broad_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_broad"],
+        arguments=[
+            "joint_broad",
+            "--controller-manager-timeout", 
+            "50"
+        ],
     )
 
     twist_mux_config = os.path.join(get_package_share_directory('wd_control'),
