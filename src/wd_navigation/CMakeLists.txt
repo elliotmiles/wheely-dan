@@ -13,7 +13,7 @@ find_package(ament_cmake REQUIRED)
 
 # required for python file, i.e. not compiled
 install(
-  DIRECTORY config src
+  DIRECTORY config
   DESTINATION share/${PROJECT_NAME}
 )
 
