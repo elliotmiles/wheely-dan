@@ -13,6 +13,6 @@
         <xacro:include filename="$(find wd_simulation)/urdf/gazebo_control.xacro"/>
     </xacro:unless>
 
-    <xacro:include filename="$(find wd_simulation)/urdf/gazebo_lidar.xacro"/>
+    <xacro:include filename="$(find wd_simulation)/urdf/sensors.xacro"/>
 
 </robot>

@@ -31,7 +31,7 @@ def generate_launch_description():
     
     world = LaunchConfiguration('world')
 
-    world_file = os.path.join(get_package_share_directory(package_name), 'worlds', 'test.world')
+    world_file = os.path.join(get_package_share_directory(package_name), 'worlds', 'turtlebot3_world.world')
 
     world_arg = DeclareLaunchArgument(
         'world',
@@ -50,7 +50,8 @@ def generate_launch_description():
     spawn_entity = Node(package='ros_gz_sim', executable='create',
                         arguments=['-topic', 'robot_description',
                                    '-name', 'wheely_dan',
-                                   '-z', '0.1'],
+                                   '-z', '0.1',
+                                   '-x', '0.5'],
                         output='screen')
 
 
@@ -79,7 +80,11 @@ def generate_launch_description():
     joint_broad_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_broad"],
+        arguments=[
+            "joint_broad",
+            "--controller-manager-timeout", 
+            "50"
+        ],
     )
 
     twist_mux_config = os.path.join(get_package_share_directory('wd_control'),
