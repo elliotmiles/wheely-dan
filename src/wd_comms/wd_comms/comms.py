@@ -7,7 +7,7 @@ from geometry_msgs.msg import Twist
 
 
 class Comms:
-    def __init__(self, port='/dev/ttyUSB0', baudrate=115200):
+    def __init__(self, port='/dev/ttyACM0', baudrate=115200):
         self.ser_ = serial.Serial(port, baudrate, timeout=1)
         time.sleep(2)  # Wait for the serial connection to initialize
 
