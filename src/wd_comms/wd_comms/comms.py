@@ -8,7 +8,7 @@ from geometry_msgs.msg import Twist
 
 class Comms:
     def __init__(self, port='/dev/ttyACM0', baudrate=115200):
-        self.ser_ = serial.Serial(port, baudrate, timeout=1)
+        self.ser_ = serial.Serial(port, baudrate, timeout=0.01)
         time.sleep(2)  # Wait for the serial connection to initialize
 
     def upload(self, data):
@@ -18,6 +18,11 @@ class Comms:
 
     def close(self):
         self.ser_.close()
+
+    def read(self):
+        if self.ser_.in_waiting > 0:
+            msg = self.ser_.readline().decode().strip()
+            print(msg)
 
 
 
@@ -32,17 +37,27 @@ class CommsNode(Node):
             10
         )
     
+        self.timer_ = self.create_timer(0.01, self.read_serial)
+    
     def subscription_callback(self, msg):
         self.msg_list_= [msg.linear.x, msg.angular.z]
         self.comms_.upload(self.msg_list_)
 
+    def read_serial(self):
+        self.comms_.read()
+
 def main():
     rclpy.init()
+
     comms_node = CommsNode()
-    rclpy.spin(comms_node)
-    comms_node.comms_.close()
-    comms_node.destroy_node()
-    rclpy.shutdown()
+
+    try:
+        rclpy.spin(comms_node)
+    finally:
+        comms_node.comms_.close()
+        comms_node.destroy_node()
+        rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()
