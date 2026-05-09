@@ -4,6 +4,7 @@ import time
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
+from sensor_msgs.msg import Imu
 
 
 class Comms:
@@ -21,8 +22,9 @@ class Comms:
 
     def read(self):
         if self.ser_.in_waiting > 0:
-            msg = self.ser_.readline().decode().strip()
-            print(msg)
+            return self.ser_.readline().decode().strip()
+        else:
+            return None
 
 
 
@@ -36,15 +38,38 @@ class CommsNode(Node):
             self.subscription_callback,
             10
         )
+        self.imu_publisher_ = self.create_publisher(Imu, '/imu', 10)
+
+        self.odom_publisher_ = self.create_publisher(Twist, '/odom', 10)
     
-        self.timer_ = self.create_timer(0.01, self.read_serial)
+        self.timer_ = self.create_timer(0.01, self.timer_callback)
     
     def subscription_callback(self, msg):
         self.msg_list_= [msg.linear.x, msg.angular.z]
         self.comms_.upload(self.msg_list_)
 
-    def read_serial(self):
-        self.comms_.read()
+    def timer_callback(self):
+        msg = self.comms_.read()
+
+        if msg is not None:
+            if msg.startswith("IMU,"):
+                imu_msg = Imu()
+                imu_data = msg.split(",")  # Extract the data after "IMU," and split by commas
+                imu_msg.orientation.w = float(imu_data[1])  
+                imu_msg.orientation.x = float(imu_data[2]) 
+                imu_msg.orientation.y = float(imu_data[3]) 
+                imu_msg.orientation.z = float(imu_data[4]) 
+                imu_msg.angular_velocity.x = float(imu_data[5])
+                imu_msg.angular_velocity.y = float(imu_data[6]) 
+                imu_msg.angular_velocity.z = float(imu_data[7]) 
+                imu_msg.linear_acceleration.x = float(imu_data[8]) 
+                imu_msg.linear_acceleration.y = float(imu_data[9])  
+                imu_msg.linear_acceleration.z = float(imu_data[10]) 
+                self.imu_publisher_.publish(imu_msg)  # Publish the IMU data
+            #elif msg.startswith("O,"):
+
+        print(msg)  # Print the received message for debugging purposes
+
 
 def main():
     rclpy.init()

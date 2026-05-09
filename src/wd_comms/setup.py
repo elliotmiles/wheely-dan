@@ -24,7 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'comms_node = wd_comms.comms:main',
+            'serial_comms = wd_comms.comms:main',
         ],
     },
 )
