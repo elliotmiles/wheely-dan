@@ -3,7 +3,7 @@ import time
 
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import Imu
 
 
@@ -33,14 +33,14 @@ class CommsNode(Node):
         super().__init__('comms_node')
         self.comms_ = Comms()
         self.subscription_ = self.create_subscription(
-            Twist,
+            TwistStamped,
             '/cmd_vel',
             self.subscription_callback,
             10
         )
         self.imu_publisher_ = self.create_publisher(Imu, '/imu', 10)
 
-        self.odom_publisher_ = self.create_publisher(Twist, '/odom', 10)
+        self.odom_publisher_ = self.create_publisher(TwistStamped, '/odom', 10)
     
         self.timer_ = self.create_timer(0.01, self.timer_callback)
     
