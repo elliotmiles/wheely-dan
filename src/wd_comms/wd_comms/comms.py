@@ -5,6 +5,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import Imu
+from nav_msgs.msg import Odometry
 
 
 class Comms:
@@ -40,12 +41,12 @@ class CommsNode(Node):
         )
         self.imu_publisher_ = self.create_publisher(Imu, '/imu', 10)
 
-        self.odom_publisher_ = self.create_publisher(TwistStamped, '/odom', 10)
+        self.odom_publisher_ = self.create_publisher(Odometry, '/odom', 10)
     
         self.timer_ = self.create_timer(0.01, self.timer_callback)
     
     def subscription_callback(self, msg):
-        self.msg_list_= [msg.linear.x, msg.angular.z]
+        self.msg_list_= [msg.twist.linear.x, msg.twist.angular.z]
         self.comms_.upload(self.msg_list_)
 
     def timer_callback(self):
