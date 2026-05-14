@@ -11,10 +11,6 @@ Featuring:
 
 The goal is to autonomously map a room in 3D and I plan to experiment with exploration algorithms for efficiency.
 
-[Blog](https://github.com/elliotmiles/wheely-dan/blob/main/blog.md)
-
-[Source code](https://github.com/elliotmiles/wheely-dan/tree/main/src)
-
 ## How to use this repo with ROS2 (for Ubuntu 22.04 ONLY)
 1. [Install ROS2 Humble](https://docs.ros.org/en/humble/Installation.html)
 2. Download [setup.sh](https://github.com/elliotmiles/wheely-dan/blob/main/setup.sh)
