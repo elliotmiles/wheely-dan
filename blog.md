@@ -1,3 +1,46 @@
+# 15/05/2026 - Motor control
+
+Just sending PWM signals to the motors with no feedback technically does work, however open-loop control is not good enough for this project, and wheel odometry data is basically a need for robust SLAM. This is where the encoders become useful. They serve two purposes:
+- To measure how fast the wheels are going and feed this data into a PID control loop
+- To accumulate the total distance each wheel has moved, and send this odometry data to the Jetson
+
+The datasheet for my motors provides a wiring diagram, as seen below.
+
+<img width="957" height="384" alt="Screenshot from 2026-05-05 23-14-07" src="https://github.com/user-attachments/assets/42122a03-1f11-4960-8ac4-50cdefc9d982" />
+
+First, on the Jetson I wrote a ROS2 node in python that:
+- subscribes to `/cmd_vel` and sends it to the Teensy 
+- Publishes IMU and odometry data from the Teensy to ROS2
+
+However before just sending raw `/cmd_vel` data to the teensy, it must be parsed into a CSV string format. Before that I also calculated the actual speed each wheel needs to turn at to achieve the `/cmd_vel`. Below you can see a screenshot from wikipedia which shows the kinematic equations I used.
+
+<img width="990" height="416" alt="Screenshot from 2026-05-13 21-10-37" src="https://github.com/user-attachments/assets/786398bc-e353-43be-bffa-7464bfd88160" />
+
+I also needed to write the control loop on the Teensy. With `#include <Encoders.h>` I can instantiate encoders, then use the `.read()` function instead of dealing with interrupts in the code.
+
+
+
+
+
+# 05/05/2026 - Serial comms
+
+I needed a way for the Jetson and Teensy 4.1 to communicate, so I began by routing a cable from the grove header I'd put on the PCB for this purpose to the UART pins on the Jetson's expansion header. I then wrote basic programs on the Jetson and the teensy to try and echo some text back to the Jetson, however when I observed the results in miniterm I saw it had become corrupted.
+
+<img width="1167" height="386" alt="Screenshot from 2026-05-05 20-34-19" src="https://github.com/user-attachments/assets/6dafbfad-1c4d-457f-9a24-9bf3f0c4c3c2" />
+
+I highly suspect this was to do with a loose connection with the jumper wires, and I wanted the connection to be as robust as possible, so I decided to change to a serial connection over USB instead. Immediately the results improved and the data was no longer corrupted.
+
+
+# 30/04/2026 - rtabmap
+
+
+# 27/04/2026 - Nav2
+
+I installed nav2 via the terminal and then made sure to copy the params file from the bringup package into my own package. Then, once slam_toolbox was already running, I was able to launch nav2 with `ros2 launch nav2_bringup navigation_launch.py params_file:=src/wd_navigation/config/nav2_params.yaml use_sim_time:=true`. In rviz2, I made sure to set the fixed frame to `map` and set the Map display's topic to `/global_costmap/costmap` and set the colour scheme to `costmap`. 
+
+This allows a goal pose to be selected on the 2D map, and the robot will navigate to that pose. It stays away from any obstacles (high cost areas) and prioritises moving through empty space (low cost areas). I plan to use this in conjunction with an exploration algorithm later down the line, where the exploration algorithm sends a goal pose to nav2.
+
+
 # 18/04/2026 - SLAM
 
 I have implemented SLAM on the robot using `slam_toolbox`. It was fairly straightforward, I just downloaded it and copied the relevant config file to my source code. 
@@ -11,13 +54,14 @@ which resulted in an error:
 <img width="813" height="127" alt="Screenshot from 2026-04-18 19-17-05" src="https://github.com/user-attachments/assets/09ac8f3d-93fe-4db2-bbfc-328a4b88995f" />
 
 Apparently that command is for an older version of ROS2 and now the correct command is `ros2 launch slam_toolbox online_async_launch.py use_sim_time:=true slam_params_file:=./src/wd_navigation/config/mapper_params_online_async.yaml
-` which yielded the correct results.
+` which yielded the correct results. 
 
-
-
-
+The robot can now generate a map of the environment around it and locate itself within that map. The limitation of slam_toolbox is that it only generates a 2D map (at the height of the lidar scanner), which leaves it susceptible to objects blocking its path that may be lower down. 2D scanning is still acceptable for navigation of less cluttered environments such as (most) homes, and warehouses. Robots that operate in more complex environments such as outdoors tend to use sensors such as depth cameras or 3D lidar scanners to generate a 3D map of the environment. Therefore I plan to add a forward-facing depth camera to the object to generate a more sophisticated map.
 
 https://github.com/user-attachments/assets/aeaf4adf-0821-4af0-9df3-b328802047cf
+
+
+
 
 
 # 15/04/2026 - ros2_control
