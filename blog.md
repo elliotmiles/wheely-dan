@@ -8,15 +8,43 @@ The datasheet for my motors provides a wiring diagram, as seen below.
 
 <img width="957" height="384" alt="Screenshot from 2026-05-05 23-14-07" src="https://github.com/user-attachments/assets/42122a03-1f11-4960-8ac4-50cdefc9d982" />
 
+Running the Encoder Count Test program from PJRC allowed me to test the encoders by turning the wheels by hand and using the serial monitor to see the encoder count tick up. However I discovered that when turning both wheels forwards, the left wheel was adding negative counts. To fix this I simply reversed Hall A and Hall B when creating the Encoder object. 
+
+<img width="1799" height="982" alt="image" src="https://github.com/user-attachments/assets/ce3879b0-4c98-4f4d-965d-d495cb174408" />
+
+
 First, on the Jetson I wrote a ROS2 node in python that:
 - subscribes to `/cmd_vel` and sends it to the Teensy 
 - Publishes IMU and odometry data from the Teensy to ROS2
 
-However before just sending raw `/cmd_vel` data to the teensy, it must be parsed into a CSV string format. Before that I also calculated the actual speed each wheel needs to turn at to achieve the `/cmd_vel`. Below you can see a screenshot from wikipedia which shows the kinematic equations I used.
+However before just sending raw `/cmd_vel` data to the Teensy, it must be parsed into a CSV string format. Before that I also calculated the actual speed each wheel needs to turn at to achieve the `/cmd_vel`. Below you can see a screenshot from wikipedia which shows the kinematic equations I used.
+
+The Teensy sends the position and velocity of each wheel, which the Jetson then uses to calculate the wheel odometry. I sketched a diagram to show how this is calculated:
+
+<img width="560" height="576" alt="image" src="https://github.com/user-attachments/assets/69add731-5b87-4b4f-9f38-aa38f9d3a19a" />
+
+> - The purple cross represents the global origin
+> - The green path represents the path of `base_link`
+> - The black paths represent the wheel paths, and the red path represents the extra distance covered by the right wheel in this case
+
+From the arc angle formula
+
+$$
+\theta = \frac{l}{r}
+$$
+
+the change in orientation can be obtained:
+
+$$
+\Delta \theta = \frac{D_R - D_L}{L}
+$$
+
 
 <img width="990" height="416" alt="Screenshot from 2026-05-13 21-10-37" src="https://github.com/user-attachments/assets/786398bc-e353-43be-bffa-7464bfd88160" />
 
 I also needed to write the control loop on the Teensy. With `#include <Encoders.h>` I can instantiate encoders, then use the `.read()` function instead of dealing with interrupts in the code.
+
+
 
 
 
