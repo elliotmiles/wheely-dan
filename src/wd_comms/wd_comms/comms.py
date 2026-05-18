@@ -1,11 +1,16 @@
 import serial
 import time
+import math
 
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
+
+radius = 0.0325 # wheel radius in metres
+separation = 0.202
+enc_cpr = 2800.0 # encoder counts per revolution (700 on datasheet but 4x counting, so 2800)
 
 
 class Comms:
@@ -34,13 +39,25 @@ class Comms:
         except OSError as e:
             print(f"USB disconnected: {e}")
             return None
+        
+class RobotState:
+    def __init__(self):
+        self.x_ = 0.0
+        self.y_ = 0.0
+        self.theta_ = 0.0
 
+        self.prev_pos_left_ = None
+        self.prev_pos_right_ = None
 
 
 class CommsNode(Node):
     def __init__(self):
         super().__init__('comms_node')
+
         self.comms_ = Comms()
+
+        self.robot_state_ = RobotState()
+
         self.subscription_ = self.create_subscription(
             TwistStamped,
             '/cmd_vel',
@@ -75,7 +92,70 @@ class CommsNode(Node):
                 imu_msg.linear_acceleration.y = float(imu_data[9])  
                 imu_msg.linear_acceleration.z = float(imu_data[10]) 
                 self.imu_publisher_.publish(imu_msg)  # Publish the IMU data
-            #elif msg.startswith("O,"):
+
+            elif msg.startswith("Odom,"):
+                # parse received data
+                odom_data = msg.split(",")  # Extract the data after "Odom," and split by commas
+                posLeft = float(odom_data[1])  
+                posRight = float(odom_data[2]) 
+                velLeft = float(odom_data[3]) 
+                velRight = float(odom_data[4]) 
+
+                if self.robot_state_.prev_pos_left_ is None:
+                    self.robot_state_.prev_pos_left_ = posLeft
+                    self.robot_state_.prev_pos_right_ = posRight
+                    return
+
+
+                deltaLeftCounts = posLeft - self.robot_state_.prev_pos_left_
+                deltaRightCounts = posRight - self.robot_state_.prev_pos_right_
+
+                self.robot_state_.prev_pos_left_ = posLeft
+                self.robot_state_.prev_pos_right_ = posRight
+
+                distLeft = (deltaLeftCounts/enc_cpr) * 2 * math.pi * radius
+                distRight = (deltaRightCounts/enc_cpr) * 2 * math.pi * radius
+                displacement = (distLeft + distRight) / 2
+
+                deltaTheta = (distRight - distLeft) / separation
+
+
+                self.robot_state_.x_ += displacement * math.cos(self.robot_state_.theta_ + deltaTheta/2)
+                self.robot_state_.y_ += displacement * math.sin(self.robot_state_.theta_ + deltaTheta/2)
+
+                self.robot_state_.theta_ += deltaTheta
+
+                linVel = (radius * (velLeft + velRight)) / 2 
+                angVel = (radius * (velRight - velLeft)) / separation
+
+
+
+
+                # publish data to ros2 topic
+                odom_msg = Odometry()
+                odom_msg.header.stamp = self.get_clock().now().to_msg()
+                odom_msg.header.frame_id = "odom"
+                odom_msg.child_frame_id = "base_link"
+
+                odom_msg.pose.pose.position.x = self.robot_state_.x_
+                odom_msg.pose.pose.position.y = self.robot_state_.y_
+                odom_msg.pose.pose.position.z = 0.0
+
+                odom_msg.pose.pose.orientation.w = math.cos(self.robot_state_.theta_ / 2)
+                odom_msg.pose.pose.orientation.x = 0.0
+                odom_msg.pose.pose.orientation.y = 0.0
+                odom_msg.pose.pose.orientation.z = math.sin(self.robot_state_.theta_ / 2)
+
+
+                odom_msg.twist.twist.linear.x = linVel
+                odom_msg.twist.twist.linear.y = 0.0
+                odom_msg.twist.twist.linear.z = 0.0
+
+                odom_msg.twist.twist.angular.x = 0.0
+                odom_msg.twist.twist.angular.y = 0.0
+                odom_msg.twist.twist.angular.z = angVel
+
+                self.odom_publisher_.publish(odom_msg)  # Publish the Odometry data
 
         print(msg)  # Print the received message for debugging purposes
 
