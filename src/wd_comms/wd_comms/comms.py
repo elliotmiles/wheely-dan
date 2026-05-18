@@ -22,9 +22,17 @@ class Comms:
         self.ser_.close()
 
     def read(self):
-        if self.ser_.in_waiting > 0:
-            return self.ser_.readline().decode().strip()
-        else:
+        try:
+            if self.ser_.in_waiting > 0:
+                return self.ser_.readline().decode(errors='ignore').strip()
+            return None
+
+        except serial.SerialException as e:
+            print(f"Serial error: {e}")
+            return None
+
+        except OSError as e:
+            print(f"USB disconnected: {e}")
             return None
 
 
