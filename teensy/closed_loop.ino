@@ -54,8 +54,6 @@ void setup() {
   pinMode(R_PWM_pin, OUTPUT);
 
   Serial.begin(115200);
-
-  Serial.println("Comms established.");
 }
 
 
