@@ -42,7 +42,7 @@
     <link name="chassis_link">
         <visual>
         <geometry>
-            <mesh filename="$(find wd_description)/meshes/chassis_link.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://wd_description/meshes/chassis_link.stl" scale="0.001 0.001 0.001"/>
         </geometry>
         <material name="grey"/>
         </visual>
@@ -71,7 +71,7 @@
     <link name="jetson_link">
         <visual>
         <geometry>
-            <mesh filename="$(find wd_description)/meshes/jetson_link.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://wd_description/meshes/jetson_link.stl" scale="0.001 0.001 0.001"/>
         </geometry>
         <material name="dark_grey"/>
         </visual>
@@ -98,7 +98,7 @@
     <link name="battery_link">
         <visual>
         <geometry>
-            <mesh filename="$(find wd_description)/meshes/battery_link.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://wd_description/meshes/battery_link.stl" scale="0.001 0.001 0.001"/>
         </geometry>
         <material name="red"/>
         </visual>
@@ -124,7 +124,7 @@
     <link name="pcb_link">
         <visual>
         <geometry>
-            <mesh filename="$(find wd_description)/meshes/pcb_link.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://wd_description/meshes/pcb_link.stl" scale="0.001 0.001 0.001"/>
         </geometry>
         <material name="green"/>
         </visual>
@@ -151,7 +151,7 @@
     <link name="driver_left_link">
         <visual>
         <geometry>
-            <mesh filename="$(find wd_description)/meshes/driver_left_link.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://wd_description/meshes/driver_left_link.stl" scale="0.001 0.001 0.001"/>
         </geometry>
         <material name="grey"/>
         </visual>
@@ -177,7 +177,7 @@
     <link name="driver_right_link">
         <visual>
         <geometry>
-            <mesh filename="$(find wd_description)/meshes/driver_right_link.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://wd_description/meshes/driver_right_link.stl" scale="0.001 0.001 0.001"/>
         </geometry>
         <material name="grey"/>
         </visual>
@@ -203,7 +203,7 @@
     <link name="lidar_link">
         <visual>
         <geometry>
-            <mesh filename="$(find wd_description)/meshes/lidar_link.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://wd_description/meshes/lidar_link.stl" scale="0.001 0.001 0.001"/>
         </geometry>
         <material name="dark_grey"/>
         </visual>
@@ -230,7 +230,7 @@
     <link name="wheel_left_link">
         <visual>
         <geometry>
-            <mesh filename="$(find wd_description)/meshes/wheel_left_link.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://wd_description/meshes/wheel_left_link.stl" scale="0.001 0.001 0.001"/>
         </geometry>
         <material name="blue"/>
         </visual>
@@ -264,7 +264,7 @@
     <link name="wheel_right_link">
         <visual>
         <geometry>
-            <mesh filename="$(find wd_description)/meshes/wheel_right_link.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://wd_description/meshes/wheel_right_link.stl" scale="0.001 0.001 0.001"/>
         </geometry>
         <material name="blue"/>
         </visual>
@@ -299,7 +299,7 @@
     <link name="caster_fork_left_link">
         <visual>
         <geometry>
-            <mesh filename="$(find wd_description)/meshes/caster_fork_link.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://wd_description/meshes/caster_fork_link.stl" scale="0.001 0.001 0.001"/>
         </geometry>
         <material name="dark_grey"/>
         </visual>
@@ -324,7 +324,7 @@
     <link name="caster_wheel_left_link">
         <visual>
         <geometry>
-            <mesh filename="$(find wd_description)/meshes/caster_wheel_link.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://wd_description/meshes/caster_wheel_link.stl" scale="0.001 0.001 0.001"/>
         </geometry>
         <material name="dark_grey"/>
         </visual>
@@ -357,7 +357,7 @@
     <link name="caster_fork_right_link">
         <visual>
         <geometry>
-            <mesh filename="$(find wd_description)/meshes/caster_fork_link.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://wd_description/meshes/caster_fork_link.stl" scale="0.001 0.001 0.001"/>
         </geometry>
         <material name="dark_grey"/>
         </visual>
@@ -382,7 +382,7 @@
     <link name="caster_wheel_right_link">
         <visual>
         <geometry>
-            <mesh filename="$(find wd_description)/meshes/caster_wheel_link.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://wd_description/meshes/caster_wheel_link.stl" scale="0.001 0.001 0.001"/>
         </geometry>
         <material name="dark_grey"/>
         </visual>
@@ -416,7 +416,7 @@
         <visual>
         <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
         <geometry>
-            <mesh filename="$(find wd_description)/meshes/d435.dae"/>
+            <mesh filename="package://wd_description/meshes/d435.dae"/>
         </geometry>
         <material name="dark_grey"/>
         </visual>

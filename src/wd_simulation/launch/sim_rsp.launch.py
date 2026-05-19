@@ -22,8 +22,8 @@ def generate_launch_description():
     use_ros2_control = LaunchConfiguration('use_ros2_control')
 
     # process the URDF file
-    pkg_path = os.path.join(get_package_share_directory('wd_description'))
-    xacro_file = os.path.join(pkg_path,'src','robot.urdf.xacro')
+    pkg_path = os.path.join(get_package_share_directory('wd_simulation'))
+    xacro_file = os.path.join(pkg_path,'urdf','sim_robot.urdf.xacro')
     robot_description_config = ParameterValue(
         Command(['xacro ', xacro_file, ' use_ros2_control:=', use_ros2_control]),
         value_type=str
