@@ -16,7 +16,7 @@ def generate_launch_description():
 
     package_name = 'wd_bringup'
 
-    rsp = IncludeLaunchDescription(
+    rsp_launch = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([os.path.join(
                     get_package_share_directory(package_name),'launch','rsp.launch.py'
                 )]), launch_arguments={'use_sim_time': 'false'}.items()
@@ -28,13 +28,17 @@ def generate_launch_description():
                 )])
     )
 
-    joystick_config = os.path.join(get_package_share_directory('wd_control'),
-        'config', 'joystick.yaml')
-    joystick = Node(
-        package='joy_node',
-        executable='joy_node',
-        output='screen',
-        parameters=[joystick_config])
+    joystick_launch = IncludeLaunchDescription(
+                PythonLaunchDescriptionSource([os.path.join(
+                    get_package_share_directory(package_name),'launch','joystick.launch.py'
+                )])
+    )
+    
+    comms = Node(
+        package='wd_comms',
+        executable='serial_comms',
+        output='screen'
+    )
 
     # twist_mux manages multiple sources of /cmd_vel input
     twist_mux_config = os.path.join(get_package_share_directory('wd_control'),
@@ -55,8 +59,9 @@ def generate_launch_description():
             default_value='true',
             description='Use ros2_control if true'),
 
-        rsp,
+        rsp_launch,
         lidar_launch,
-        joystick,
+        joystick_launch,
+        comms,
         twist_mux
     ])
