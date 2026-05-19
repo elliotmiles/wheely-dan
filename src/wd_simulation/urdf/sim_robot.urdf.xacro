@@ -3,16 +3,16 @@
 
     <xacro:arg name="use_ros2_control" default="true"/>
 
-    <xacro:include filename="package://wd_description/urdf/robot_desc.xacro" />
+    <xacro:include filename="$(find wd_description)/urdf/robot_desc.xacro" />
 
     <!-- Switch between ros2_control and Gazebo integrated diff-drive control -->
     <xacro:if value="$(arg use_ros2_control)">
-        <xacro:include filename="package://wd_control/urdf/ros2_control.xacro"/>
+        <xacro:include filename="$(find wd_control)/urdf/ros2_control.xacro"/>
     </xacro:if>
     <xacro:unless value="$(arg use_ros2_control)">
-        <xacro:include filename="package://wd_simulation/urdf/gazebo_control.xacro"/>
+        <xacro:include filename="$(find wd_simulation)/urdf/gazebo_control.xacro"/>
     </xacro:unless>
 
-    <xacro:include filename="package://wd_simulation/urdf/sensors.xacro"/>
+    <xacro:include filename="$(find wd_simulation)/urdf/sensors.xacro"/>
 
 </robot>

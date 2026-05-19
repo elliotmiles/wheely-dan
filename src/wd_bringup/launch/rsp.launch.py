@@ -17,7 +17,7 @@ def generate_launch_description():
 
     # process the URDF file
     pkg_path = os.path.join(get_package_share_directory('wd_description'))
-    xacro_file = os.path.join(pkg_path,'src','robot.urdf.xacro')
+    xacro_file = os.path.join(pkg_path,'urdf','robot_desc.xacro')
     robot_description_config = ParameterValue(
         Command(['xacro ', xacro_file]),
         value_type=str
