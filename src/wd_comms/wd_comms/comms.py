@@ -8,6 +8,8 @@ from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import JointState
+import tf2_ros
+from geometry_msgs.msg import TransformStamped
 
 radius = 0.0325 # wheel radius in metres
 separation = 0.202
@@ -72,6 +74,8 @@ class CommsNode(Node):
         self.joint_state_publisher_ = self.create_publisher(JointState, '/joint_states', 10)
     
         self.timer_ = self.create_timer(0.01, self.timer_callback)
+
+        self.tf_broadcaster_ = tf2_ros.TransformBroadcaster(self)
     
     def subscription_callback(self, msg):
         self.msg_list_= [msg.twist.linear.x, msg.twist.angular.z]
@@ -145,7 +149,7 @@ class CommsNode(Node):
                 angVel = (radius * (velRight - velLeft)) / separation # angular velocity of whole robot around Z
 
 
-                # publish data to ros2 topic
+                # ----- publish odometry data -----
                 odom_msg = Odometry()
                 odom_msg.header.stamp = self.get_clock().now().to_msg()
                 odom_msg.header.frame_id = "odom"
@@ -170,6 +174,25 @@ class CommsNode(Node):
                 odom_msg.twist.twist.angular.z = angVel
 
                 self.odom_publisher_.publish(odom_msg)
+                # ----------
+
+                # ----- publish TF -----
+                t = TransformStamped()
+                t.header.stamp = self.get_clock().now().to_msg()
+                t.header.frame_id = "odom"
+                t.child_frame_id = "base_link"
+
+                t.transform.translation.x = self.robot_state_.x_
+                t.transform.translation.y = self.robot_state_.y_
+                t.transform.translation.z = 0.0
+
+                t.transform.rotation.w = math.cos(self.robot_state_.theta_ / 2)
+                t.transform.rotation.x = 0.0
+                t.transform.rotation.y = 0.0
+                t.transform.rotation.z = math.sin(self.robot_state_.theta_ / 2)
+
+                self.tf_broadcaster_.sendTransform(t)
+                # ---------
 
         print(msg)  # for debug
 
