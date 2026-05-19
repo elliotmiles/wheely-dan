@@ -7,6 +7,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
+from sensor_msgs.msg import JointState
 
 radius = 0.0325 # wheel radius in metres
 separation = 0.202
@@ -16,7 +17,7 @@ enc_cpr = 2800.0 # encoder counts per revolution (700 on datasheet but 4x counti
 class Comms:
     def __init__(self, port='/dev/ttyACM0', baudrate=115200):
         self.ser_ = serial.Serial(port, baudrate, timeout=0.01)
-        time.sleep(2)  # Wait for the serial connection to initialize
+        time.sleep(2)  # wait for the serial connection to initialize
 
     def upload(self, data):
         # first converts all list elements to strings, then joins them into one continuous string separated by commas
@@ -67,6 +68,8 @@ class CommsNode(Node):
         self.imu_publisher_ = self.create_publisher(Imu, '/imu', 10)
 
         self.odom_publisher_ = self.create_publisher(Odometry, '/odom', 10)
+
+        self.joint_state_publisher_ = self.create_publisher(JointState, '/joint_states', 10)
     
         self.timer_ = self.create_timer(0.01, self.timer_callback)
     
@@ -80,7 +83,7 @@ class CommsNode(Node):
         if msg is not None:
             if msg.startswith("IMU,"):
                 imu_msg = Imu()
-                imu_data = msg.split(",")  # Extract the data after "IMU," and split by commas
+                imu_data = msg.split(",")  # extract the data after "IMU," and split by commas
                 imu_msg.orientation.w = float(imu_data[1])  
                 imu_msg.orientation.x = float(imu_data[2]) 
                 imu_msg.orientation.y = float(imu_data[3]) 
@@ -95,7 +98,7 @@ class CommsNode(Node):
 
             elif msg.startswith("Odom,"):
                 # parse received data
-                odom_data = msg.split(",")  # Extract the data after "Odom," and split by commas
+                odom_data = msg.split(",")  # extract the data after "Odom," and split by commas
                 posLeft = float(odom_data[1])  
                 posRight = float(odom_data[2]) 
                 velLeft = float(odom_data[3]) 
@@ -105,30 +108,41 @@ class CommsNode(Node):
                     self.robot_state_.prev_pos_left_ = posLeft
                     self.robot_state_.prev_pos_right_ = posRight
                     return
+                
+                # ----- update JointState -----
+                joint_state_msg = JointState()
+                joint_state_msg.header.stamp = self.get_clock().now().to_msg()
+                joint_state_msg.name = ['wheel_left_joint', 'wheel_right_joint']
 
+                left_wheel_angle = (posLeft / enc_cpr) * 2 * math.pi
+                right_wheel_angle = (posRight / enc_cpr) * 2 * math.pi
 
-                deltaLeftCounts = posLeft - self.robot_state_.prev_pos_left_
+                joint_state_msg.position = [left_wheel_angle, right_wheel_angle]
+                joint_state_msg.velocity = [velLeft, velRight]
+
+                self.joint_state_publisher_.publish(joint_state_msg)  # Publish the JointState data
+                # ----------
+
+                deltaLeftCounts = posLeft - self.robot_state_.prev_pos_left_ # counts since last update
                 deltaRightCounts = posRight - self.robot_state_.prev_pos_right_
 
-                self.robot_state_.prev_pos_left_ = posLeft
+                self.robot_state_.prev_pos_left_ = posLeft # update previous counts for next iteration
                 self.robot_state_.prev_pos_right_ = posRight
 
-                distLeft = (deltaLeftCounts/enc_cpr) * 2 * math.pi * radius
+                distLeft = (deltaLeftCounts/enc_cpr) * 2 * math.pi * radius # calculate distance travelled by each wheel
                 distRight = (deltaRightCounts/enc_cpr) * 2 * math.pi * radius
-                displacement = (distLeft + distRight) / 2
+                displacement = (distLeft + distRight) / 2 # calculate forward displacement of robot
 
-                deltaTheta = (distRight - distLeft) / separation
+                deltaTheta = (distRight - distLeft) / separation # calculate change in orientation of robot
 
-
-                self.robot_state_.x_ += displacement * math.cos(self.robot_state_.theta_ + deltaTheta/2)
+                # ----- calcuate new absolute pose -----
+                self.robot_state_.x_ += displacement * math.cos(self.robot_state_.theta_ + deltaTheta/2) 
                 self.robot_state_.y_ += displacement * math.sin(self.robot_state_.theta_ + deltaTheta/2)
-
                 self.robot_state_.theta_ += deltaTheta
+                # ----------
 
                 linVel = (radius * (velLeft + velRight)) / 2 
-                angVel = (radius * (velRight - velLeft)) / separation
-
-
+                angVel = (radius * (velRight - velLeft)) / separation # angular velocity of whole robot around Z
 
 
                 # publish data to ros2 topic
@@ -155,9 +169,9 @@ class CommsNode(Node):
                 odom_msg.twist.twist.angular.y = 0.0
                 odom_msg.twist.twist.angular.z = angVel
 
-                self.odom_publisher_.publish(odom_msg)  # Publish the Odometry data
+                self.odom_publisher_.publish(odom_msg)
 
-        print(msg)  # Print the received message for debugging purposes
+        print(msg)  # for debug
 
 
 def main():

@@ -16,12 +16,10 @@ def generate_launch_description():
 
     package_name = 'wd_bringup'
 
-    use_ros2_control = LaunchConfiguration('use_ros2_control')
-
     rsp = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([os.path.join(
                     get_package_share_directory(package_name),'launch','rsp.launch.py'
-                )]), launch_arguments={'use_sim_time': 'false', 'use_ros2_control': use_ros2_control}.items()
+                )]), launch_arguments={'use_sim_time': 'false'}.items()
     )
 
     lidar_launch = IncludeLaunchDescription(
@@ -30,26 +28,15 @@ def generate_launch_description():
                 )])
     )
 
-    diff_drive_spawner = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=[
-            "diff_cont",
-            '--controller-ros-args',
-            '-r /diff_cont/cmd_vel:=/cmd_vel'
-        ],
-    )
+    joystick_config = os.path.join(get_package_share_directory('wd_control'),
+        'config', 'joystick.yaml')
+    joystick = Node(
+        package='joy_node',
+        executable='joy_node',
+        output='screen',
+        parameters=[joystick_config])
 
-    joint_broad_spawner = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=[
-            "joint_broad",
-            "--controller-manager-timeout", 
-            "50"
-        ],
-    )
-
+    # twist_mux manages multiple sources of /cmd_vel input
     twist_mux_config = os.path.join(get_package_share_directory('wd_control'),
         'config', 'twist_mux.yaml')
     twist_mux = Node(
@@ -61,18 +48,15 @@ def generate_launch_description():
             {'use_sim_time': False},
             twist_mux_config])
 
-    # Launch
+    # launch
     return LaunchDescription([
         DeclareLaunchArgument(
             'use_ros2_control',
             default_value='true',
             description='Use ros2_control if true'),
 
-        LogInfo(msg=["ros2_control enabled: ", use_ros2_control]),
-
         rsp,
         lidar_launch,
-        diff_drive_spawner,
-        joint_broad_spawner,
+        joystick,
         twist_mux
     ])
