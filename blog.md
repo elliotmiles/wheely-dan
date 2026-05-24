@@ -61,6 +61,17 @@ I highly suspect this was to do with a loose connection with the jumper wires, a
 
 # 30/04/2026 - rtabmap
 
+I first incorporated a depth camera plugin for gazebo to simulate the Intel Realsense D435 camera I will be using. I then installed rtabmap, which uses the `/camera/image_raw`, `/camera/depth/image_raw` and `/camera/depth/camera_info` topics to produce a `/voxel_cloud` pointcloud2 display. This is then used to create a 3D map as the robot drives around. 
+
+<img width="1857" height="1005" alt="Screenshot from 2026-05-24 17-34-25" src="https://github.com/user-attachments/assets/db9f656a-dc26-4e20-b559-f5b3b790c930" />
+
+<img width="1857" height="1004" alt="Screenshot from 2026-05-24 17-34-51" src="https://github.com/user-attachments/assets/a4f8c078-db4f-4c4c-be11-e0cb4227fc00" />
+
+<img width="1857" height="1049" alt="Screenshot from 2026-05-24 17-38-50" src="https://github.com/user-attachments/assets/d4c10186-5574-4a93-854d-0840076d8f56" />
+
+I plan to get this working on the real robot with the depth camera, then implement semantic mapping by running each RGB frame through a YOLO model to detect common objects, and cross referencing the corresponding depth frame to place the detection in the 3D map. This is beneficial for two reasons:
+- It allows the map data to be more meaningful than just categorising empty space and occupied space
+- It provides waypoints the robot can use for navigation and for communicating the exploration algorithm to a human
 
 # 27/04/2026 - Nav2
 
