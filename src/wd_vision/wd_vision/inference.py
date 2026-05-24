@@ -10,7 +10,6 @@ from ultralytics import YOLO
 
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Point
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 
@@ -45,7 +44,7 @@ def ema(prev, new, alpha):
     return (int(x), int(y))
 
 
-def inference(frame, model, labels, resize, resW, resH, record, recorder, bbox_colours, min_thresh, avg_frame_rate):
+def inference(frame,model, labels, resize, resW, resH, record, recorder, detector, bbox_colours, min_thresh, alpha, box_centres, smoothed_centres, smoothed_markers, avg_frame_rate):
 
     # begin inference loop
     
@@ -62,8 +61,9 @@ def inference(frame, model, labels, resize, resW, resH, record, recorder, bbox_c
     # extract results
     detections = results[0].boxes
 
-    detections_count = 0
+    card_count = 0
 
+    current_frame_cards = {}
 
     # go through each detection and get bbox coords, confidence and class
     for i in range(len(detections)):
@@ -80,6 +80,8 @@ def inference(frame, model, labels, resize, resW, resH, record, recorder, bbox_c
         # get bounding box confidence
         conf = detections[i].conf.item()
 
+        # raw centre coords of the card
+        centre = (int((xmax + xmin) / 2), int((ymax + ymin) / 2))
 
         if conf > min_thresh:
 
@@ -94,27 +96,77 @@ def inference(frame, model, labels, resize, resW, resH, record, recorder, bbox_c
             cv.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), colour, cv.FILLED) # draw white box to put label text in
             cv.putText(frame, label, (xmin, label_ymin-7), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1) # draw label text
 
-            detections_count = detections_count + 1
+            # draw circle at centre of card
+            radius = max(5, int(min(xmax - xmin, ymax - ymin) / 4)) # if card is small then rad=5
+            cv.circle(frame, centre, radius, colour, -1)
 
+            # apply EMA to smooth card centre over frames
+            smoothed_centres[classname] = ema(smoothed_centres[classname], centre, alpha)
+            current_frame_cards[classname] = smoothed_centres[classname]
+
+            box_centres[classname] = centre
+            card_count = card_count + 1
+
+    box_centres.clear()
+    box_centres.update(current_frame_cards)
+
+    #----- ARUCO MARKERS -----
+
+    # get a greyscale version of the frame and extract corners and ids of detected aruco markers
+    grey = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    corners, ids, rejected = detector.detectMarkers(grey)
+    
+    if ids is not None:
+        # draw detected markers on the original frame
+        cv.aruco.drawDetectedMarkers(frame, corners, ids)
+
+        marker_centres = {}
+        
+        for i, corner in enumerate(corners):
+
+            # reshape array (4 rows, 2 columns)
+            pts = corner.reshape((4, 2))
+            # [[x1, y1],
+            #  [x2, y2],
+            #  [x3, y3],
+            #  [x4, y4]]
+
+            # mean of the 4 corner points is the centre of the aruco marker
+            centre_x = int(pts[:, 0].mean())
+            centre_y = int(pts[:, 1].mean())
+            raw_centre = (centre_x, centre_y)
+            
+            marker_id = int(ids[i][0])
+
+            smoothed_markers[marker_id] = ema(smoothed_markers.get(marker_id), raw_centre, alpha)
+
+            # add marker centres to dict
+            marker_centres[marker_id] = smoothed_markers[marker_id]
+
+
+            # draw circle at centre of aruco marker
+            cv.circle(frame, (centre_x, centre_y), 15, (0, 0, 255), -1)
+
+
+                            
     # draw framerate and resolution
     cv.putText(frame, f'FPS: {avg_frame_rate:0.2f}', (10,20), cv.FONT_HERSHEY_SIMPLEX, .7, (0,255,255), 2) # draw framerate
     cv.putText(frame, f'Resolution: {frame.shape[1]}x{frame.shape[0]}', (10,40), cv.FONT_HERSHEY_SIMPLEX, .7, (0,255,255), 2) # draw resolution
     
     # draw detection results
-    cv.putText(frame, f'Number of cards: {detections_count}', (10,60), cv.FONT_HERSHEY_SIMPLEX, .7, (0,255,255), 2) # draw total number of detected cards
+    cv.putText(frame, f'Number of cards: {card_count}', (10,60), cv.FONT_HERSHEY_SIMPLEX, .7, (0,255,255), 2) # draw total number of detected cards
     cv.imshow('YOLO detection results',frame) # display frame
     cv.waitKey(1)
 
     if record: 
         recorder.write(frame)
 
-    return [xmin, ymin, xmax, ymax] if detections_count > 0 else None
 
 
 
 
 class VisionNode(Node):
-    def __init__(self, model, labels, resize, resW, resH, record, recorder, detector, bbox_colours, min_thresh, alpha, card_centres, smoothed_detections, smoothed_markers):
+    def __init__(self, model, labels, resize, resW, resH, record, recorder, detector, bbox_colours, min_thresh, alpha, box_centres, smoothed_centres, smoothed_markers):
         super().__init__('vision_node')
 
         
@@ -125,25 +177,21 @@ class VisionNode(Node):
         self.resH_ = resH # height to resize frames to for inference (if resizing)
         self.record_ = record # bool for whether to record inference results
         self.recorder_ = recorder # video recorder object (if recording)
+        self.detector_ = detector # aruco marker detector object
         self.bbox_colours_ = bbox_colours # colours to use for bounding boxes of different classes
         self.min_thresh_ = min_thresh # min confidence threshold for detections 
         self.alpha_ = alpha # EMA factor
-        self.smoothed_detections_ = smoothed_detections # 
+        self.box_centres_ = box_centres # dict that holds class:centre, and updates every frame with latest smoothed centre
+        self.smoothed_centres_ = smoothed_centres # 
+        self.smoothed_markers_ = smoothed_markers #
         self.avg_frame_rate_ = 0 # initialise avg frame rate
         self.frame_rate_buffer_ = [] # buffer to hold frame rate results for calculating avg frame rate
         self.fps_avg_len_ = 200 # num of frames to calculate average frame rate over
 
 
-        self.image_sub_ = self.create_subscription(
+        self.subscription_ = self.create_subscription(
             Image,
-            '/camera/image_raw',
-            self.frame_callback,
-            10
-        )
-
-        self.depth_sub_ = self.create_subscription(
-            Image,
-            '/camera/depth/image_raw',
+            '/camera',
             self.frame_callback,
             10
         )
@@ -178,7 +226,7 @@ class VisionNode(Node):
             # start timer
             t_start = time.perf_counter()
             # run inference and get coords
-            coords = inference(frame, self.model_, self.labels_, self.resize_, self.resW_, self.resH_, self.record_, self.recorder_, self.detector_, self.bbox_colours_, self.min_thresh_, self.alpha_, self.card_centres_, self.smoothed_detections_, self.smoothed_markers_, self.avg_frame_rate_)
+            coords = inference(frame, self.model_, self.labels_, self.resize_, self.resW_, self.resH_, self.record_, self.recorder_, self.detector_, self.bbox_colours_, self.min_thresh_, self.alpha_, self.box_centres_, self.smoothed_centres_, self.smoothed_markers_, self.avg_frame_rate_)
             
             # calculate fps for this frame
             t_stop = time.perf_counter()
@@ -201,9 +249,11 @@ class VisionNode(Node):
             self.busy_ = False
 
 def main():
+    box_centres = {}
+    smoothed_markers = {}
 
     # parse user inputs
-    model_path = "yolo26n.pt"
+    model_path = "runs/detect/train/weights/best.pt"
     min_thresh = 0.5
     user_res = None
     record = False
@@ -213,8 +263,14 @@ def main():
     labels = model.names
 
 
-    smoothed_detections = {}
-    smoothed_detections = {cls: None for cls in labels.values()}
+    smoothed_centres = {}
+    smoothed_centres = {cls: None for cls in labels.values()}
+
+    # ARUCO MARKERS 
+    aruco_dict = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_50)
+    parameters = cv.aruco.DetectorParameters()
+    parameters.cornerRefinementMethod = cv.aruco.CORNER_REFINE_SUBPIX
+    detector = cv.aruco.ArucoDetector(aruco_dict, parameters)
 
     alpha = 0.3
 
@@ -233,7 +289,7 @@ def main():
                 (96,202,231), (159,124,168), (169,162,241), (98,118,150), (172,176,184)]
     
     rclpy.init()
-    vision_node = VisionNode(model, labels, resize, resW, resH, record, recorder, detector, bbox_colours, min_thresh, alpha, card_centres, smoothed_detections, smoothed_markers)
+    vision_node = VisionNode(model, labels, resize, resW, resH, record, recorder, detector, bbox_colours, min_thresh, alpha, box_centres, smoothed_centres, smoothed_markers)
     rclpy.spin(vision_node)
     vision_node.destroy_node()
     rclpy.shutdown()
