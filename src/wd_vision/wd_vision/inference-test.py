@@ -11,7 +11,6 @@ from ultralytics import YOLO
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
-from vizualization_msgs.msg import Marker
 from cv_bridge import CvBridge
 
 def setup_model(model_path):
@@ -197,47 +196,13 @@ class VisionNode(Node):
             10
         )
 
-        self.publisher_ = self.create_publisher(
-            Marker,
-            '/obj_markers',
-            10
-        )
-
         self.bridge_ = CvBridge()
 
         self.busy_ = False # flag to prevent multiple simultaneous inference loops
 
 
-    def publish_marker(self, coords):
-        msg = Marker()
-        msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = "camera_link"
-        msg.type = Marker.SPHERE
-        msg.scale.x = 0.1
-        msg.scale.y = 0.1
-        msg.scale.z = 0.1
-        msg.color.a = 1.0
-        msg.color.r = 1.0
-        msg.color.g = 0.0
-        msg.color.b = 0.0
-        msg.pose.position.x = coords[0]
-        msg.pose.position.y = coords[1]
-        msg.pose.position.z = 0.0
-        self.publisher_.publish(msg)
-        self.get_logger().info(f'Published marker: {msg.pose.position.x}, {msg.pose.position.y}')
-
-    def depth_projection(self, area, depth_msg):
-        # convert depth message to OpenCV format
-        depth_frame = self.bridge_.imgmsg_to_cv2(depth_msg, desired_encoding='passthrough')
-
-        # get depth value at centre of detected object
-        x, y = area
-        depth_value = depth_frame[y, x]
-
-        return depth_value
-
     
-    def synced_callback(self, rgb_msg, depth_msg):
+    def frame_callback(self, rgb_msg, depth_msg):
         if self.busy_:
             return
 
@@ -264,10 +229,6 @@ class VisionNode(Node):
 
             # mean fps
             self.avg_frame_rate_ = np.mean(self.frame_rate_buffer_)
-
-            if area is not None:
-                marker_pos = self.depth_projection(area, depth_msg)
-                self.publish_marker(marker_pos)
     
         finally:
             self.busy_ = False

@@ -24,6 +24,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'inference = wd_vision.inference:main',
+            'inference_test = wd_vision.inference_test:main',
         ],
     },
 )
