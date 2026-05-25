@@ -1,6 +1,10 @@
 #include <Encoder.h>
 #include <cmath>
 
+#include <Arduino.h>
+#include <Adafruit_BNO08x.h>
+
+
 #define R_DIR_pin 4
 #define R_PWM_pin 5
 #define L_DIR_pin 6
@@ -15,6 +19,33 @@
 #define separation 0.202
 
 #define enc_cpr 2800.0 // encoder counts per revolution (700 on datasheet but 4x counting, so 2800)
+
+// ----- IMU -----
+#define BNO08X_RESET -1
+
+Adafruit_BNO08x bno08x(BNO08X_RESET);
+sh2_SensorValue_t sensorValue;
+
+long reportIntervalUs = 5000;
+
+float qw, qx, qy, qz;
+float gx, gy, gz;
+float ax, ay, az;
+
+void setReports(long report_interval) {
+  Serial.println("Setting desired reports");
+
+  if (!bno08x.enableReport(SH2_ARVR_STABILIZED_RV, report_interval)) {
+    Serial.println("Could not enable quaternion");
+  }
+  if (!bno08x.enableReport(SH2_GYROSCOPE_CALIBRATED, report_interval)) {
+    Serial.println("Could not enable gyroscope");
+  }
+  if (!bno08x.enableReport(SH2_LINEAR_ACCELERATION, report_interval)) {
+    Serial.println("Could not enable accelerometer");
+  }
+}
+// ------------------
 
 Encoder encLeft(L_hall_B, L_hall_A);
 Encoder encRight(R_hall_A, R_hall_B);
@@ -54,10 +85,89 @@ void setup() {
   pinMode(R_PWM_pin, OUTPUT);
 
   Serial.begin(115200);
+
+  if (!bno08x.begin_I2C()) {
+    Serial.println("Failed to find BNO08x chip");
+
+    while (1) {
+      delay(10);
+    }
+  }
+
+  Serial.println("BNO08x Found!");
+
+  setReports(reportIntervalUs);
 }
 
 
 void loop() {
+
+  if (bno08x.wasReset()) {
+    Serial.println("Sensor reset");
+
+    setReports(reportIntervalUs);
+  }
+
+  if (bno08x.getSensorEvent(&sensorValue)) {
+    switch (sensorValue.sensorId) {
+      case SH2_ARVR_STABILIZED_RV:
+        qw = sensorValue.un.arvrStabilizedRV.real;
+        qx = sensorValue.un.arvrStabilizedRV.i;
+        qy = sensorValue.un.arvrStabilizedRV.j;
+        qz = sensorValue.un.arvrStabilizedRV.k;
+
+        break;
+
+      case SH2_GYROSCOPE_CALIBRATED:
+
+        gx = sensorValue.un.gyroscope.x;
+        gy = sensorValue.un.gyroscope.y;
+        gz = sensorValue.un.gyroscope.z;
+
+        break;
+
+      case SH2_LINEAR_ACCELERATION:
+
+        ax = sensorValue.un.linearAcceleration.x;
+        ay = sensorValue.un.linearAcceleration.y;
+        az = sensorValue.un.linearAcceleration.z;
+
+        break;
+    }
+  }
+
+  static long last = 0;
+  long now = micros();
+  if ((now - last) >= 10000) {
+
+    last = now;
+
+    Serial.print("IMU,");
+
+    Serial.print(qw);
+    Serial.print(",");
+    Serial.print(qx);
+    Serial.print(",");
+    Serial.print(qy);
+    Serial.print(",");
+    Serial.print(qz);
+    Serial.print(",");
+
+    Serial.print(gx);
+    Serial.print(",");
+    Serial.print(gy);
+    Serial.print(",");
+    Serial.print(gz);
+    Serial.print(",");
+
+    Serial.print(ax);
+    Serial.print(",");
+    Serial.print(ay);
+    Serial.print(",");
+    Serial.println(az);
+  }
+
+
   static long posLeftPrev = 0;
   static long posRightPrev = 0;
   static unsigned long prevT = 0;
