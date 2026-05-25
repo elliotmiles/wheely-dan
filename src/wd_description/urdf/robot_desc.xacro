@@ -412,7 +412,7 @@
 
     <!-- ========= DEPTH CAMERA ========= -->
 
-    <link name="depth_camera_link">
+    <link name="camera_link">
         <visual>
         <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
         <geometry>
@@ -429,21 +429,21 @@
         </inertial>
     </link>
 
-    <joint name="depth_camera_joint" type="fixed">
+    <joint name="camera_joint" type="fixed">
         <parent link="base_link"/>
-        <child link="depth_camera_link"/>
+        <child link="camera_link"/>
         <origin xyz="0.2 0 0.075" rpy="0 0 0"/>
     </joint>
 
     <!-- ── Optical frame (ROS convention: z-forward, x-right, y-down) ── -->
-    <joint name="depth_camera_optical_joint" type="fixed">
-      <parent link="depth_camera_link"/>
-      <child  link="depth_camera_link_optical"/>
+    <joint name="camera_optical_joint" type="fixed">
+      <parent link="camera_link"/>
+      <child  link="camera_link_optical"/>
       <!-- Rotate from Gazebo (x-forward) to ROS optical (z-forward) convention -->
       <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
     </joint>
 
-    <link name="depth_camera_link_optical"/>
+    <link name="camera_link_optical"/>
 
     <!-- ========= GAZEBO SETTINGS ========= -->
 
