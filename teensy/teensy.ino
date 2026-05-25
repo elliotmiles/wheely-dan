@@ -32,6 +32,7 @@ float qw, qx, qy, qz;
 float gx, gy, gz;
 float ax, ay, az;
 
+// try to enable the desired reports at the specified interval
 void setReports(long report_interval) {
   Serial.println("Setting desired reports");
 
@@ -86,6 +87,7 @@ void setup() {
 
   Serial.begin(115200);
 
+  // ----- IMU -----
   if (!bno08x.begin_I2C()) {
     Serial.println("Failed to find BNO08x chip");
 
@@ -97,17 +99,20 @@ void setup() {
   Serial.println("BNO08x Found!");
 
   setReports(reportIntervalUs);
+  // -------------------
 }
 
 
 void loop() {
 
+  // ----- IMU -----
   if (bno08x.wasReset()) {
     Serial.println("Sensor reset");
 
     setReports(reportIntervalUs);
   }
 
+  // check for new data from the IMU
   if (bno08x.getSensorEvent(&sensorValue)) {
     switch (sensorValue.sensorId) {
       case SH2_ARVR_STABILIZED_RV:
@@ -138,7 +143,7 @@ void loop() {
 
   static long last = 0;
   long now = micros();
-  if ((now - last) >= 10000) {
+  if ((now - last) >= 10000) { // only print every 10ms to avoid flooding the serial output
 
     last = now;
 
@@ -166,7 +171,7 @@ void loop() {
     Serial.print(",");
     Serial.println(az);
   }
-
+  // ------------------
 
   static long posLeftPrev = 0;
   static long posRightPrev = 0;
@@ -235,18 +240,18 @@ void loop() {
 
   Serial.println(omegaRightFilt);
 
-  float kp = 60.0;
-  float ki = 20.0;
-  float eLeft = targetOmegaL - omegaLeftFilt;
-  float eRight = targetOmegaR - omegaRightFilt;  
+  float kp = 60.0; // proportional gain
+  float ki = 20.0; // integral gain
+  float eLeft = targetOmegaL - omegaLeftFilt; // error
+  float eRight = targetOmegaR - omegaRightFilt;
   
-  eIntegralLeft += eLeft*deltaT;
+  eIntegralLeft += eLeft*deltaT; // integral
   eIntegralRight += eRight*deltaT;  
 
   eIntegralLeft = constrain(eIntegralLeft, -20, 20);
   eIntegralRight = constrain(eIntegralRight, -20, 20);
 
-  float uLeft = kp*eLeft + ki*eIntegralLeft;
+  float uLeft = kp*eLeft + ki*eIntegralLeft; // control signal
   float uRight = kp*eRight + ki*eIntegralRight;
 
   // --- set the motor speed and direction ---
@@ -262,7 +267,7 @@ void loop() {
     pwrLeft = 255;
   }
 
-    int dirRight = 1;
+  int dirRight = 1;
   if (uRight<0)
   {
     dirRight = -1;
