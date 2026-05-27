@@ -191,7 +191,7 @@ class VisionNode(Node):
 
         self.subscription_ = self.create_subscription(
             Image,
-            '/camera/image_raw',
+            '/camera/camera/color/image_raw',
             self.frame_callback,
             10
         )
@@ -202,7 +202,7 @@ class VisionNode(Node):
 
 
     
-    def frame_callback(self, rgb_msg, depth_msg):
+    def frame_callback(self, rgb_msg):
         if self.busy_:
             return
 
