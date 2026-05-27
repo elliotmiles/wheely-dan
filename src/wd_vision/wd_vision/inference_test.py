@@ -238,7 +238,7 @@ def main():
     smoothed_markers = {}
 
     # parse user inputs
-    model_path = "yolo26n.pt"
+    model_path = "./yolo26n.pt"
     min_thresh = 0.5
     user_res = None
     record = False
