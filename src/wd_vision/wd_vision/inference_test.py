@@ -1,6 +1,7 @@
 import os
+from ament_index_python.packages import get_package_share_directory
+
 import sys
-import argparse
 import glob
 import time
 
@@ -238,7 +239,7 @@ def main():
     smoothed_markers = {}
 
     # parse user inputs
-    model_path = "./yolo26n.pt"
+    model_path = os.path.join(get_package_share_directory('wd_vision'), 'models', 'yolo26n.pt') # default model path
     min_thresh = 0.5
     user_res = None
     record = False
