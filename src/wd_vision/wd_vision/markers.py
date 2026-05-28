@@ -226,10 +226,10 @@ class VisionNode(Node):
         self.avg_frame_rate_ = 0 # initialise avg frame rate
         self.frame_rate_buffer_ = [] # buffer to hold frame rate results for calculating avg frame rate
         self.fps_avg_len_ = 200 # num of frames to calculate average frame rate over
-        self.fx_ = fx # depth camera intrinsics
-        self.fy_ = fy
-        self.cx_ = cx
-        self.cy_ = cy     
+        self.fx_ = None # depth camera intrinsics
+        self.fy_ = None
+        self.cx_ = None
+        self.cy_ = None     
         self.markers_scale_ = 0.08 # scale of the published markers in RViz 
 
         self.rgb_sub_ = Subscriber(
@@ -306,10 +306,10 @@ class VisionNode(Node):
 
         valid_depths = kernel[np.isfinite(kernel) & (kernel > 0)]
 
-        if valid_depths.size == 0:
+        if valid_depths.size == 0 or len(valid_depths) < 20:
             return None
         
-        avg_depth = np.mean(valid_depths)
+        avg_depth = np.median(valid_depths) # using median since it's less affected by outliers
 
         if avg_depth > 10:
             avg_depth /= 1000.0
@@ -322,24 +322,32 @@ class VisionNode(Node):
         return (x, y, z) # marker position relative to camera in OPTICAL FRAME COORDS
     
     
-    def publish_marker(self, coords, scale):
+    def publish_marker(self, coords, scale, marker_id):
         
         x, y, z = coords
         
         msg = Marker()
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = "camera_link_optical"
+        msg.header.frame_id = "camera_color_optical_frame" # set the frame ID to the optical frame (obtained from /tf_static published by camera driver node)
         msg.type = Marker.SPHERE
+
+        msg.ns = "detections"
+        msg.id = marker_id
+        msg.action = Marker.ADD
+
         msg.scale.x = scale
         msg.scale.y = scale
         msg.scale.z = scale
+
         msg.color.a = 1.0
         msg.color.r = 1.0
         msg.color.g = 0.0
         msg.color.b = 0.0
+
         msg.pose.position.x = x
         msg.pose.position.y = y
         msg.pose.position.z = z
+
         self.publisher_.publish(msg)
         self.get_logger().info(f'Published marker: {msg.pose.position.x}, {msg.pose.position.y}')
 
@@ -391,13 +399,17 @@ class VisionNode(Node):
             # mean fps
             self.avg_frame_rate_ = np.mean(self.frame_rate_buffer_)
 
-            for det in detections:
+            for i, det in enumerate(detections):
                 centre = det['centre']
                 marker_pos = self.depth_projection(centre, depth_msg)
 
                 if marker_pos is not None:
-                    self.publish_marker(marker_pos, self.markers_scale_)
-    
+                    self.publish_marker(marker_pos, self.markers_scale_, i)
+
+                self.get_logger().info(
+                    f"3D point: {marker_pos}"
+                )
+        
         finally:
             self.busy_ = False
 
@@ -440,10 +452,6 @@ def main():
     bbox_colours = [(164,120,87), (68,148,228), (93,97,209), (178,182,133), (88,159,106), 
                 (96,202,231), (159,124,168), (169,162,241), (98,118,150), (172,176,184)]
     
-    fx = None
-    fy = None
-    cx = None
-    cy = None
     
     rclpy.init()
 
@@ -461,11 +469,7 @@ def main():
         alpha, 
         box_centres, 
         smoothed_centres, 
-        smoothed_markers,
-        fx,
-        fy,
-        cx,
-        cy
+        smoothed_markers
     )
 
     rclpy.spin(vision_node)
