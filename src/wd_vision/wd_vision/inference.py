@@ -1,6 +1,7 @@
 import os
+from ament_index_python.packages import get_package_share_directory
+
 import sys
-import argparse
 import glob
 import time
 
@@ -11,7 +12,11 @@ from ultralytics import YOLO
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
+
+from message_filters import Subscriber, ApproximateTimeSynchronizer
+from sensor_msgs.msg import CameraInfo
 from vizualization_msgs.msg import Marker
+
 from cv_bridge import CvBridge
 
 def setup_model(model_path):
@@ -167,7 +172,11 @@ def inference(frame,model, labels, resize, resW, resH, record, recorder, detecto
 
 
 class VisionNode(Node):
-    def __init__(self, model, labels, resize, resW, resH, record, recorder, detector, bbox_colours, min_thresh, alpha, box_centres, smoothed_centres, smoothed_markers):
+    def __init__(self, model, labels, resize, 
+                 resW, resH, record, recorder, 
+                 detector, bbox_colours, min_thresh, alpha, 
+                 box_centres, smoothed_centres, smoothed_markers,
+                 fx, fy, cx, cy):
         super().__init__('vision_node')
 
         
@@ -188,12 +197,38 @@ class VisionNode(Node):
         self.avg_frame_rate_ = 0 # initialise avg frame rate
         self.frame_rate_buffer_ = [] # buffer to hold frame rate results for calculating avg frame rate
         self.fps_avg_len_ = 200 # num of frames to calculate average frame rate over
+        self.fx_ = fx
+        self.fy_ = fy
+        self.cx_ = cx
+        self.cy_ = cy      
 
-
-        self.subscription_ = self.create_subscription(
+        self.rgb_sub_ = Subscriber(
+            self,
             Image,
-            '/camera/image_raw',
-            self.frame_callback,
+            '/camera/camera/color/image_raw'
+        )
+
+        self.depth_sub_ = Subscriber(
+            self,
+            Image,
+            '[depth-topic]'
+        )
+
+        # sync RGB + depth
+        self.ts_ = ApproximateTimeSynchronizer(
+            [self.rgb_sub_, self.depth_sub_],
+            queue_size=10,
+            slop=0.05
+        )
+
+        self.ts_.registerCallback(self.synced_callback)
+
+
+
+        self.camera_info_sub_ = self.create_subscription(
+            CameraInfo,
+            '/camera/camera/color/camera_info',
+            self.camera_info_callback,
             10
         )
 
@@ -207,6 +242,12 @@ class VisionNode(Node):
 
         self.busy_ = False # flag to prevent multiple simultaneous inference loops
 
+
+    def camera_info_callback(self, msg):
+        self.fx_ = msg.k[0]
+        self.fy_ = msg.k[4]
+        self.cx_ = msg.k[2]
+        self.cy_ = msg.k[5]
 
     def publish_marker(self, coords):
         msg = Marker()
@@ -276,8 +317,7 @@ def main():
     box_centres = {}
     smoothed_markers = {}
 
-    # parse user inputs
-    model_path = "yolo26n.pt"
+    model_path = os.path.join(get_package_share_directory('wd_vision'), 'models', 'yolo26n.pt') # default model path
     min_thresh = 0.5
     user_res = None
     record = False

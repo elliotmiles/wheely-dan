@@ -238,7 +238,6 @@ def main():
     box_centres = {}
     smoothed_markers = {}
 
-    # parse user inputs
     model_path = os.path.join(get_package_share_directory('wd_vision'), 'models', 'yolo26n.pt') # default model path
     min_thresh = 0.5
     user_res = None
