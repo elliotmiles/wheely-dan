@@ -15,7 +15,7 @@ from sensor_msgs.msg import Image
 
 from message_filters import Subscriber, ApproximateTimeSynchronizer
 from sensor_msgs.msg import CameraInfo
-from vizualization_msgs.msg import Marker
+from visualization_msgs.msg import Marker
 
 from cv_bridge import CvBridge
 
@@ -50,7 +50,25 @@ def ema(prev, new, alpha):
     return (int(x), int(y))
 
 
-def inference(frame,model, labels, resize, resW, resH, record, recorder, detector, bbox_colours, min_thresh, alpha, box_centres, smoothed_centres, smoothed_markers, avg_frame_rate):
+def inference(
+        frame, 
+        model, 
+        labels, 
+        resize, 
+        resW, 
+        resH, 
+        record, 
+        recorder, 
+        detector, 
+        bbox_colours, 
+        min_thresh, 
+        alpha, 
+        box_centres, 
+        smoothed_centres, 
+        smoothed_markers, 
+        avg_frame_rate
+    ):
+
 
     # begin inference loop
     
@@ -70,6 +88,8 @@ def inference(frame,model, labels, resize, resW, resH, record, recorder, detecto
     detections_count = 0
 
     current_frame_detections = {}
+
+    detected_objects = []
 
     # go through each detection and get bbox coords, confidence and class
     for i in range(len(detections)):
@@ -112,6 +132,13 @@ def inference(frame,model, labels, resize, resW, resH, record, recorder, detecto
 
             box_centres[classname] = centre
             detections_count = detections_count + 1
+
+            detected_objects.append({
+                'class': classname,
+                'centre': centre,
+                'bbox': (xmin, ymin, xmax, ymax),
+                'confidence': conf,
+            })
 
     box_centres.clear()
     box_centres.update(current_frame_detections)
@@ -167,6 +194,8 @@ def inference(frame,model, labels, resize, resW, resH, record, recorder, detecto
     if record: 
         recorder.write(frame)
 
+    return detected_objects
+
 
 
 
@@ -197,10 +226,11 @@ class VisionNode(Node):
         self.avg_frame_rate_ = 0 # initialise avg frame rate
         self.frame_rate_buffer_ = [] # buffer to hold frame rate results for calculating avg frame rate
         self.fps_avg_len_ = 200 # num of frames to calculate average frame rate over
-        self.fx_ = fx
+        self.fx_ = fx # depth camera intrinsics
         self.fy_ = fy
         self.cx_ = cx
-        self.cy_ = cy      
+        self.cy_ = cy     
+        self.markers_scale_ = 0.08 # scale of the published markers in RViz 
 
         self.rgb_sub_ = Subscriber(
             self,
@@ -211,7 +241,7 @@ class VisionNode(Node):
         self.depth_sub_ = Subscriber(
             self,
             Image,
-            '[depth-topic]'
+            '/camera/camera/aligned_depth_to_color/image_raw'
         )
 
         # sync RGB + depth
@@ -240,7 +270,7 @@ class VisionNode(Node):
 
         self.bridge_ = CvBridge()
 
-        self.busy_ = False # flag to prevent multiple simultaneous inference loops
+        self.busy_ = False # initialise flag to prevent multiple simultaneous inference loops
 
 
     def camera_info_callback(self, msg):
@@ -249,33 +279,69 @@ class VisionNode(Node):
         self.cx_ = msg.k[2]
         self.cy_ = msg.k[5]
 
-    def publish_marker(self, coords):
+    def depth_projection(self, centre, depth_msg):
+        
+        if self.fx_ is None: 
+            return None
+
+        # convert depth message to OpenCV format
+        depth_frame = self.bridge_.imgmsg_to_cv2(depth_msg, desired_encoding='passthrough')
+
+        # coords of centre of bbox
+        u, v = centre
+
+        # height and width of depth frame
+        h, w = depth_frame.shape
+
+        # clamping bounds for 9x9 kernel
+        x_min = max(0, u - 4)
+        x_max = min(w, u + 5)
+
+        y_min = max(0, v - 4)
+        y_max = min(h, v + 5)
+
+        kernel = depth_frame[y_min:y_max, x_min:x_max]
+
+        # remove invalid depth values
+
+        valid_depths = kernel[np.isfinite(kernel) & (kernel > 0)]
+
+        if valid_depths.size == 0:
+            return None
+        
+        avg_depth = np.mean(valid_depths)
+
+        if avg_depth > 10:
+            avg_depth /= 1000.0
+
+        # 3d projection using pinhole model
+        x = (u - self.cx_) * avg_depth / self.fx_
+        y = (v - self.cy_) * avg_depth / self.fy_
+        z = avg_depth
+
+        return (x, y, z) # marker position relative to camera in OPTICAL FRAME COORDS
+    
+    
+    def publish_marker(self, coords, scale):
+        
+        x, y, z = coords
+        
         msg = Marker()
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = "camera_link"
+        msg.header.frame_id = "camera_link_optical"
         msg.type = Marker.SPHERE
-        msg.scale.x = 0.1
-        msg.scale.y = 0.1
-        msg.scale.z = 0.1
+        msg.scale.x = scale
+        msg.scale.y = scale
+        msg.scale.z = scale
         msg.color.a = 1.0
         msg.color.r = 1.0
         msg.color.g = 0.0
         msg.color.b = 0.0
-        msg.pose.position.x = coords[0]
-        msg.pose.position.y = coords[1]
-        msg.pose.position.z = 0.0
+        msg.pose.position.x = x
+        msg.pose.position.y = y
+        msg.pose.position.z = z
         self.publisher_.publish(msg)
         self.get_logger().info(f'Published marker: {msg.pose.position.x}, {msg.pose.position.y}')
-
-    def depth_projection(self, area, depth_msg):
-        # convert depth message to OpenCV format
-        depth_frame = self.bridge_.imgmsg_to_cv2(depth_msg, desired_encoding='passthrough')
-
-        # get depth value at centre of detected object
-        x, y = area
-        depth_value = depth_frame[y, x]
-
-        return depth_value
 
     
     def synced_callback(self, rgb_msg, depth_msg):
@@ -289,8 +355,27 @@ class VisionNode(Node):
 
             # start timer
             t_start = time.perf_counter()
+
             # run inference and get coords
-            area = inference(frame, self.model_, self.labels_, self.resize_, self.resW_, self.resH_, self.record_, self.recorder_, self.detector_, self.bbox_colours_, self.min_thresh_, self.alpha_, self.box_centres_, self.smoothed_centres_, self.smoothed_markers_, self.avg_frame_rate_)
+            detections = inference(
+                frame, 
+                self.model_, 
+                self.labels_, 
+                self.resize_, 
+                self.resW_, 
+                self.resH_, 
+                self.record_, 
+                self.recorder_, 
+                self.detector_, 
+                self.bbox_colours_, 
+                self.min_thresh_, 
+                self.alpha_, 
+                self.box_centres_, 
+                self.smoothed_centres_, 
+                self.smoothed_markers_, 
+                self.avg_frame_rate_
+            )
+
             
             # calculate fps for this frame
             t_stop = time.perf_counter()
@@ -306,9 +391,12 @@ class VisionNode(Node):
             # mean fps
             self.avg_frame_rate_ = np.mean(self.frame_rate_buffer_)
 
-            if area is not None:
-                marker_pos = self.depth_projection(area, depth_msg)
-                self.publish_marker(marker_pos)
+            for det in detections:
+                centre = det['centre']
+                marker_pos = self.depth_projection(centre, depth_msg)
+
+                if marker_pos is not None:
+                    self.publish_marker(marker_pos, self.markers_scale_)
     
         finally:
             self.busy_ = False
@@ -352,8 +440,34 @@ def main():
     bbox_colours = [(164,120,87), (68,148,228), (93,97,209), (178,182,133), (88,159,106), 
                 (96,202,231), (159,124,168), (169,162,241), (98,118,150), (172,176,184)]
     
+    fx = None
+    fy = None
+    cx = None
+    cy = None
+    
     rclpy.init()
-    vision_node = VisionNode(model, labels, resize, resW, resH, record, recorder, detector, bbox_colours, min_thresh, alpha, box_centres, smoothed_centres, smoothed_markers)
+
+    vision_node = VisionNode(
+        model, 
+        labels, 
+        resize, 
+        resW, 
+        resH, 
+        record, 
+        recorder, 
+        detector, 
+        bbox_colours, 
+        min_thresh, 
+        alpha, 
+        box_centres, 
+        smoothed_centres, 
+        smoothed_markers,
+        fx,
+        fy,
+        cx,
+        cy
+    )
+
     rclpy.spin(vision_node)
     vision_node.destroy_node()
     rclpy.shutdown()
