@@ -111,8 +111,7 @@ I implemented optional ros2_control functionality onto the robot. This loads two
 - **diff_cont**, which gets the wheel velocities to be sent to the hardware interface
 - **joint_broad**, which reads the motor encoder data and publishes this to /joint_states (which is then used by robot state publisher)
 
-<img width="848" height="593" alt="image" src="https://github.com/user-attachments/assets/dbc696bc-1ea6-4390-acab-8659f7c83de6" />
-
+<img width="565" height="643" alt="Screenshot from 2026-06-02 19-57-39" src="https://github.com/user-attachments/assets/53dfcef4-9ed9-40cc-a791-a970e59d77af" />
 
 To make things organised, I created a new package called `wd_control`, and added `ros2_control.xacro` and `controllers.yaml`.
 
