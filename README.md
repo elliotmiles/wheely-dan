@@ -28,7 +28,7 @@ ROS2 is used as a framework to separate different functions and organise the dat
 
 Below you can see a more detailed block diagram that shows the structure of the software for the robot:
 
-
+<img width="1239" height="839" alt="image" src="https://github.com/user-attachments/assets/fe72cc91-66b9-44d9-9fc6-1778e64463b0" />
 
 Here is another block diagram that shows the hardware for the robot:
 
