@@ -63,7 +63,6 @@ def inference(
         bbox_colours, 
         min_thresh, 
         alpha, 
-        box_centres, 
         smoothed_centres, 
         smoothed_markers, 
         avg_frame_rate
@@ -106,7 +105,7 @@ def inference(
         # get bounding box confidence
         conf = detections[i].conf.item()
 
-        # raw centre coords of the card
+        # raw centre coords of the bbox
         centre = (int((xmax + xmin) / 2), int((ymax + ymin) / 2))
 
         if conf > min_thresh:
@@ -122,15 +121,13 @@ def inference(
             cv.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), colour, cv.FILLED) # draw white box to put label text in
             cv.putText(frame, label, (xmin, label_ymin-7), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1) # draw label text
 
-            # draw circle at centre of card
-            radius = max(5, int(min(xmax - xmin, ymax - ymin) / 4)) # if card is small then rad=5
-            cv.circle(frame, centre, radius, colour, -1)
+            # draw kernel at centre of bbox
+            cv.rectangle(frame, (centre[0] - 4, centre[1] - 4), (centre[0] + 4, centre[1] + 4), colour, -1)
 
-            # apply EMA to smooth card centre over frames
+            # apply EMA to smooth bbox centre over frames
             smoothed_centres[classname] = ema(smoothed_centres[classname], centre, alpha)
             current_frame_detections[classname] = smoothed_centres[classname]
 
-            box_centres[classname] = centre
             detections_count = detections_count + 1
 
             detected_objects.append({
@@ -140,8 +137,6 @@ def inference(
                 'confidence': conf,
             })
 
-    box_centres.clear()
-    box_centres.update(current_frame_detections)
 
     #----- ARUCO MARKERS -----
 
@@ -152,8 +147,6 @@ def inference(
     if ids is not None:
         # draw detected markers on the original frame
         cv.aruco.drawDetectedMarkers(frame, corners, ids)
-
-        marker_centres = {}
         
         for i, corner in enumerate(corners):
 
@@ -172,9 +165,6 @@ def inference(
             marker_id = int(ids[i][0])
 
             smoothed_markers[marker_id] = ema(smoothed_markers.get(marker_id), raw_centre, alpha)
-
-            # add marker centres to dict
-            marker_centres[marker_id] = smoothed_markers[marker_id]
 
 
             # draw circle at centre of aruco marker
@@ -204,8 +194,7 @@ class VisionNode(Node):
     def __init__(self, model, labels, resize, 
                  resW, resH, record, recorder, 
                  detector, bbox_colours, min_thresh, alpha, 
-                 box_centres, smoothed_centres, smoothed_markers,
-                 fx, fy, cx, cy):
+                 smoothed_centres, smoothed_markers):
         super().__init__('vision_node')
 
         
@@ -220,7 +209,6 @@ class VisionNode(Node):
         self.bbox_colours_ = bbox_colours # colours to use for bounding boxes of different classes
         self.min_thresh_ = min_thresh # min confidence threshold for detections 
         self.alpha_ = alpha # EMA factor
-        self.box_centres_ = box_centres # dict that holds class:centre, and updates every frame with latest smoothed centre
         self.smoothed_centres_ = smoothed_centres # 
         self.smoothed_markers_ = smoothed_markers #
         self.avg_frame_rate_ = 0 # initialise avg frame rate
@@ -378,7 +366,6 @@ class VisionNode(Node):
                 self.bbox_colours_, 
                 self.min_thresh_, 
                 self.alpha_, 
-                self.box_centres_, 
                 self.smoothed_centres_, 
                 self.smoothed_markers_, 
                 self.avg_frame_rate_
@@ -414,7 +401,6 @@ class VisionNode(Node):
             self.busy_ = False
 
 def main():
-    box_centres = {}
     smoothed_markers = {}
 
     model_path = os.path.join(get_package_share_directory('wd_vision'), 'models', 'yolo26n.pt') # default model path
@@ -467,7 +453,6 @@ def main():
         bbox_colours, 
         min_thresh, 
         alpha, 
-        box_centres, 
         smoothed_centres, 
         smoothed_markers
     )

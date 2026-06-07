@@ -81,7 +81,7 @@ def inference(frame,model, labels, resize, resW, resH, record, recorder, detecto
         # get bounding box confidence
         conf = detections[i].conf.item()
 
-        # raw centre coords of the card
+        # raw centre coords of the bbox
         centre = (int((xmax + xmin) / 2), int((ymax + ymin) / 2))
 
         if conf > min_thresh:
@@ -97,11 +97,11 @@ def inference(frame,model, labels, resize, resW, resH, record, recorder, detecto
             cv.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), colour, cv.FILLED) # draw white box to put label text in
             cv.putText(frame, label, (xmin, label_ymin-7), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1) # draw label text
 
-            # draw circle at centre of card
-            radius = max(5, int(min(xmax - xmin, ymax - ymin) / 4)) # if card is small then rad=5
+            # draw circle at centre of bbox
+            radius = max(5, int(min(xmax - xmin, ymax - ymin) / 4)) # if bbox is small then rad=5
             cv.circle(frame, centre, radius, colour, -1)
 
-            # apply EMA to smooth card centre over frames
+            # apply EMA to smooth bbox centre over frames
             smoothed_centres[classname] = ema(smoothed_centres[classname], centre, alpha)
             current_frame_detections[classname] = smoothed_centres[classname]
 
