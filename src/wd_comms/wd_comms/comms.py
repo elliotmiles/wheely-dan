@@ -78,7 +78,7 @@ class CommsNode(Node):
         self.tf_broadcaster_ = tf2_ros.TransformBroadcaster(self)
     
     def subscription_callback(self, msg):
-        self.msg_list_= [msg.twist.linear.x, msg.twist.angular.z]
+        self.msg_list_= [msg.linear.x, msg.angular.z]
         self.comms_.upload(self.msg_list_)
 
     def timer_callback(self):
