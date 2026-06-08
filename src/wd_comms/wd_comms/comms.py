@@ -4,7 +4,7 @@ import math
 
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import TwistStamped
+from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import JointState
@@ -62,7 +62,7 @@ class CommsNode(Node):
         self.robot_state_ = RobotState()
 
         self.subscription_ = self.create_subscription(
-            TwistStamped,
+            Twist,
             '/cmd_vel',
             self.subscription_callback,
             10
