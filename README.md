@@ -30,9 +30,27 @@ Below you can see a more detailed block diagram that shows the structure of the 
 
 <img width="1239" height="839" alt="image" src="https://github.com/user-attachments/assets/fe72cc91-66b9-44d9-9fc6-1778e64463b0" />
 
+The Jetson and Teensy communicate over USB serial, where `comms_node` handles communication and flow of data on the Jetson's side. 
+
+As you can see from the diagram, there are no dedicated controller nodes. I'm not using `ros2_control` on the robot at the moment, despite using `diff_drive` and `joint_states` controllers for the simulated robot. I plan to use `ros2_control` on the robot in the future, but currently the controller functionality is included as part of the `comms_node`. On the Teensy, the code runs a PID controller to regulate the motor speed. This subsystem is kept separate from the Jetson due to it requiring interrupts and its deterministic nature.
+
+
 Here is another block diagram that shows the hardware for the robot:
 
 <img width="1236" height="838" alt="hardware-block-diagram" src="https://github.com/user-attachments/assets/3c39929e-a4bf-47e5-acd3-91e2e7971cb5" />
+
+An important design choice was adding a fuse and switch in series. I calculated the fuse rating from my current consumption table. The buck converters have capacitors onboard to ensure a smooth voltage is transferred to the components.
+
+What I'm working on next:
+- Add an emergency stop to the Xbox controller mappings
+- Adding a Battery Monitoring System, which will allow the robot to sense its battery level
+- Implementing autonomous navigation and experimenting with custom algorithms
+- Rewrite the custom controllers in `ros2_control` format
+- Improving the robot's design:
+  - Mounting the depth camera further back so it isn't poking out the front and doesn't get damaged
+  - Adding a hinge at the back so the robot is easy to open up for maintenance
+  - Improving cable management
+- Designing an autonomous charging system. I already have the ArUco marker detected and placed in rviz2 to represent a charging station, however I need to design a mechanism that connects the battery terminals to charging terminals without human intervention.
 
 
 ## How to use this repo with ROS2 (for Ubuntu 22.04 ONLY)
