@@ -1,7 +1,7 @@
 twist_mux:
   ros__parameters:
 
-    use_stamped: true
+    use_stamped: false
 
     topics:
       keyboard:
