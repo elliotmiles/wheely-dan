@@ -62,7 +62,8 @@ def generate_launch_description():
                     'use_sim_time': 'false',
                     'qos': '1',
                     'rviz': 'false',
-                    'rtabmap_args': '--delete_db_on_start'
+                    'rtabmap_args': '--delete_db_on_start',
+                    'cloud_voxel_size': '0.01'
                 }.items()
     )
 
