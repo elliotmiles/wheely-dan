@@ -310,34 +310,64 @@ class VisionNode(Node):
         return (x, y, z) # marker position relative to camera in OPTICAL FRAME COORDS
     
     
-    def publish_marker(self, coords, scale, marker_id):
+    def publish_marker(self, coords, scale, marker_id, label):
         
         x, y, z = coords
-        
-        msg = Marker()
-        msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = "camera_color_optical_frame" # set the frame ID to the optical frame (obtained from /tf_static published by camera driver node)
-        msg.type = Marker.SPHERE
 
-        msg.ns = "detections"
-        msg.id = marker_id
-        msg.action = Marker.ADD
+        # sphere -------
+        sphere = Marker()
+        sphere.header.stamp = self.get_clock().now().to_msg()
+        sphere.header.frame_id = "camera_color_optical_frame" # set the frame ID to the optical frame (obtained from /tf_static published by camera driver node)
+        sphere.type = Marker.SPHERE
 
-        msg.scale.x = scale
-        msg.scale.y = scale
-        msg.scale.z = scale
+        sphere.ns = "detections"
+        sphere.id = marker_id
+        sphere.action = Marker.ADD
 
-        msg.color.a = 1.0
-        msg.color.r = 1.0
-        msg.color.g = 0.0
-        msg.color.b = 0.0
+        sphere.scale.x = scale
+        sphere.scale.y = scale
+        sphere.scale.z = scale
 
-        msg.pose.position.x = x
-        msg.pose.position.y = y
-        msg.pose.position.z = z
+        sphere.color.a = 1.0
+        sphere.color.r = 1.0
+        sphere.color.g = 0.0
+        sphere.color.b = 0.0
 
-        self.publisher_.publish(msg)
-        self.get_logger().info(f'Published marker: {msg.pose.position.x}, {msg.pose.position.y}')
+        sphere.pose.position.x = x
+        sphere.pose.position.y = y
+        sphere.pose.position.z = z
+
+        self.publisher_.publish(sphere)
+        self.get_logger().info(f'Published marker: {sphere.pose.position.x}, {sphere.pose.position.y}')
+        # -------------------
+
+        # text --------
+        text = Marker()
+        text.header.stamp = self.get_clock().now().to_msg()
+        text.header.frame_id = "camera_color_optical_frame"
+        text.type = Marker.TEXT_VIEW_FACING
+
+        text.ns = "labels"
+        text.id = marker_id + 1000 # unique ID that is 1000 greater than its corresponding sphere (1000 to easily see which sphere it marries up with)
+        text.action = Marker.ADD
+
+        text.pose.position.x = x
+        text.pose.position.y = y
+        text.pose.position.z = z + 0.1  # slightly above sphere
+
+        text.scale.z = 0.08  # text height in metres
+
+        text.color.a = 1.0
+        text.color.r = 1.0
+        text.color.g = 1.0
+        text.color.b = 1.0
+
+        text.text = label
+
+        self.publisher_.publish(text)
+        # --------------------
+
+
 
     
     def synced_callback(self, rgb_msg, depth_msg):
@@ -391,7 +421,7 @@ class VisionNode(Node):
                 marker_pos = self.depth_projection(centre, depth_msg)
 
                 if marker_pos is not None:
-                    self.publish_marker(marker_pos, self.markers_scale_, i)
+                    self.publish_marker(marker_pos, self.markers_scale_, i, det['class'])
 
                 self.get_logger().info(
                     f"3D point: {marker_pos}"
