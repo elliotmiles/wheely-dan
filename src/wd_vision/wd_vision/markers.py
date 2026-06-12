@@ -64,7 +64,7 @@ def inference(
         min_thresh, 
         alpha, 
         smoothed_centres, 
-        smoothed_markers, 
+        smoothed_marker_centres, 
         avg_frame_rate
     ):
 
@@ -164,11 +164,19 @@ def inference(
             
             marker_id = int(ids[i][0])
 
-            smoothed_markers[marker_id] = ema(smoothed_markers.get(marker_id), raw_centre, alpha)
+            smoothed_marker_centres[marker_id] = ema(smoothed_marker_centres.get(marker_id), raw_centre, alpha)
 
 
             # draw circle at centre of aruco marker
             cv.circle(frame, (centre_x, centre_y), 15, (0, 0, 255), -1)
+
+        if 30 in smoothed_marker_centres: # the ID of the marker used for the charging station is 30 (5X5_50 dict)
+            detected_objects.append({
+                'class': 'charging station',
+                'centre': smoothed_marker_centres[30],
+                'bbox': (0, 0, 0, 0),
+                'confidence': 0,
+            })
 
 
                             
@@ -194,7 +202,7 @@ class VisionNode(Node):
     def __init__(self, model, labels, resize, 
                  resW, resH, record, recorder, 
                  detector, bbox_colours, min_thresh, alpha, 
-                 smoothed_centres, smoothed_markers):
+                 smoothed_centres, smoothed_marker_centres):
         super().__init__('vision_node')
 
         
@@ -210,7 +218,7 @@ class VisionNode(Node):
         self.min_thresh_ = min_thresh # min confidence threshold for detections 
         self.alpha_ = alpha # EMA factor
         self.smoothed_centres_ = smoothed_centres # 
-        self.smoothed_markers_ = smoothed_markers #
+        self.smoothed_marker_centres_ = smoothed_marker_centres #
         self.avg_frame_rate_ = 0 # initialise avg frame rate
         self.frame_rate_buffer_ = [] # buffer to hold frame rate results for calculating avg frame rate
         self.fps_avg_len_ = 200 # num of frames to calculate average frame rate over
@@ -397,7 +405,7 @@ class VisionNode(Node):
                 self.min_thresh_, 
                 self.alpha_, 
                 self.smoothed_centres_, 
-                self.smoothed_markers_, 
+                self.smoothed_marker_centres_, 
                 self.avg_frame_rate_
             )
 
@@ -431,7 +439,7 @@ class VisionNode(Node):
             self.busy_ = False
 
 def main():
-    smoothed_markers = {}
+    smoothed_marker_centres = {}
 
     model_path = os.path.join(get_package_share_directory('wd_vision'), 'models', 'yolo26n.pt') # default model path
     min_thresh = 0.5
@@ -447,7 +455,7 @@ def main():
     smoothed_centres = {cls: None for cls in labels.values()}
 
     # ARUCO MARKERS 
-    aruco_dict = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_50)
+    aruco_dict = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_5X5_50)
     parameters = cv.aruco.DetectorParameters()
     parameters.cornerRefinementMethod = cv.aruco.CORNER_REFINE_SUBPIX
     detector = cv.aruco.ArucoDetector(aruco_dict, parameters)
@@ -484,7 +492,7 @@ def main():
         min_thresh, 
         alpha, 
         smoothed_centres, 
-        smoothed_markers
+        smoothed_marker_centres
     )
 
     rclpy.spin(vision_node)
