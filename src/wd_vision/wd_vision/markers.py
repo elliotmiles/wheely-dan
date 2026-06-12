@@ -86,8 +86,6 @@ def inference(
 
     detections_count = 0
 
-    current_frame_detections = {}
-
     detected_objects = []
 
     # go through each detection and get bbox coords, confidence and class
@@ -126,7 +124,6 @@ def inference(
 
             # apply EMA to smooth bbox centre over frames
             smoothed_centres[classname] = ema(smoothed_centres[classname], centre, alpha)
-            current_frame_detections[classname] = smoothed_centres[classname]
 
             detections_count = detections_count + 1
 
@@ -174,8 +171,8 @@ def inference(
             detected_objects.append({
                 'class': 'charging station',
                 'centre': smoothed_marker_centres[30],
-                'bbox': (0, 0, 0, 0),
-                'confidence': 0,
+                'bbox': None,
+                'confidence': None,
             })
 
 
