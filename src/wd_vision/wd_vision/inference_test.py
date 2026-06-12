@@ -45,7 +45,7 @@ def ema(prev, new, alpha):
     return (int(x), int(y))
 
 
-def inference(frame,model, labels, resize, resW, resH, record, recorder, detector, bbox_colours, min_thresh, alpha, box_centres, smoothed_centres, smoothed_markers, avg_frame_rate):
+def inference(frame,model, labels, resize, resW, resH, record, recorder, detector, bbox_colours, min_thresh, alpha, box_centres, smoothed_centres, smoothed_marker_centres, avg_frame_rate):
 
     # begin inference loop
     
@@ -139,10 +139,10 @@ def inference(frame,model, labels, resize, resW, resH, record, recorder, detecto
             
             marker_id = int(ids[i][0])
 
-            smoothed_markers[marker_id] = ema(smoothed_markers.get(marker_id), raw_centre, alpha)
+            smoothed_marker_centres[marker_id] = ema(smoothed_marker_centres.get(marker_id), raw_centre, alpha)
 
             # add marker centres to dict
-            marker_centres[marker_id] = smoothed_markers[marker_id]
+            marker_centres[marker_id] = smoothed_marker_centres[marker_id]
 
 
             # draw circle at centre of aruco marker
@@ -167,7 +167,7 @@ def inference(frame,model, labels, resize, resW, resH, record, recorder, detecto
 
 
 class VisionNode(Node):
-    def __init__(self, model, labels, resize, resW, resH, record, recorder, detector, bbox_colours, min_thresh, alpha, box_centres, smoothed_centres, smoothed_markers):
+    def __init__(self, model, labels, resize, resW, resH, record, recorder, detector, bbox_colours, min_thresh, alpha, box_centres, smoothed_centres, smoothed_marker_centres):
         super().__init__('vision_node')
 
         
@@ -184,7 +184,7 @@ class VisionNode(Node):
         self.alpha_ = alpha # EMA factor
         self.box_centres_ = box_centres # dict that holds class:centre, and updates every frame with latest smoothed centre
         self.smoothed_centres_ = smoothed_centres # 
-        self.smoothed_markers_ = smoothed_markers #
+        self.smoothed_marker_centres_ = smoothed_marker_centres #
         self.avg_frame_rate_ = 0 # initialise avg frame rate
         self.frame_rate_buffer_ = [] # buffer to hold frame rate results for calculating avg frame rate
         self.fps_avg_len_ = 200 # num of frames to calculate average frame rate over
@@ -215,7 +215,7 @@ class VisionNode(Node):
             # start timer
             t_start = time.perf_counter()
             # run inference and get coords
-            area = inference(frame, self.model_, self.labels_, self.resize_, self.resW_, self.resH_, self.record_, self.recorder_, self.detector_, self.bbox_colours_, self.min_thresh_, self.alpha_, self.box_centres_, self.smoothed_centres_, self.smoothed_markers_, self.avg_frame_rate_)
+            area = inference(frame, self.model_, self.labels_, self.resize_, self.resW_, self.resH_, self.record_, self.recorder_, self.detector_, self.bbox_colours_, self.min_thresh_, self.alpha_, self.box_centres_, self.smoothed_centres_, self.smoothed_marker_centres_, self.avg_frame_rate_)
             
             # calculate fps for this frame
             t_stop = time.perf_counter()
@@ -236,7 +236,7 @@ class VisionNode(Node):
 
 def main():
     box_centres = {}
-    smoothed_markers = {}
+    smoothed_marker_centres = {}
 
     model_path = os.path.join(get_package_share_directory('wd_vision'), 'models', 'yolo26n.pt') # default model path
     min_thresh = 0.5
@@ -274,7 +274,7 @@ def main():
                 (96,202,231), (159,124,168), (169,162,241), (98,118,150), (172,176,184)]
     
     rclpy.init()
-    vision_node = VisionNode(model, labels, resize, resW, resH, record, recorder, detector, bbox_colours, min_thresh, alpha, box_centres, smoothed_centres, smoothed_markers)
+    vision_node = VisionNode(model, labels, resize, resW, resH, record, recorder, detector, bbox_colours, min_thresh, alpha, box_centres, smoothed_centres, smoothed_marker_centres)
     rclpy.spin(vision_node)
     vision_node.destroy_node()
     rclpy.shutdown()
