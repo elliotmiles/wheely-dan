@@ -144,6 +144,8 @@ def inference(
     if ids is not None:
         # draw detected markers on the original frame
         cv.aruco.drawDetectedMarkers(frame, corners, ids)
+
+        markers_this_frame = []
         
         for i, corner in enumerate(corners):
 
@@ -161,13 +163,15 @@ def inference(
             
             marker_id = int(ids[i][0])
 
+            markers_this_frame.append(marker_id)
+
             smoothed_marker_centres[marker_id] = ema(smoothed_marker_centres.get(marker_id), raw_centre, alpha)
 
 
             # draw circle at centre of aruco marker
             cv.circle(frame, (centre_x, centre_y), 15, (0, 0, 255), -1)
 
-        if 30 in smoothed_marker_centres: # the ID of the marker used for the charging station is 30 (5X5_50 dict)
+        if 30 in markers_this_frame: # the ID of the marker used for the charging station is 30 (5X5_50 dict)
             detected_objects.append({
                 'class': 'charging station',
                 'centre': smoothed_marker_centres[30],
