@@ -1,4 +1,29 @@
-# 15/05/2026 - Motor control
+# 11/06/2026 - Semantic Mapping
+
+<img width="1848" height="1040" alt="Screenshot from 2026-06-11 14-52-46" src="https://github.com/user-attachments/assets/6d008529-8c4b-4ad3-affd-a6550036dd2f" />
+
+<img width="644" height="575" alt="Screenshot from 2026-06-11 14-53-18" src="https://github.com/user-attachments/assets/3be783f5-234f-4be0-bb64-3da4ae4e4d32" />
+
+<img width="1853" height="1047" alt="Screenshot from 2026-06-11 14-54-02" src="https://github.com/user-attachments/assets/b0d3eb2f-1dc6-4e24-974c-839efa33ea3a" />
+
+<img width="1853" height="1047" alt="Screenshot from 2026-06-11 15-50-46" src="https://github.com/user-attachments/assets/f9b9254d-31e1-4cc1-9b13-8f03af669e86" />
+
+# 02/06/2026 - YOLO inference
+
+I wrote a node to test running YOLO inference on the depth camera stream that doesn't publish anything back to ROS, just to test the performance. I was right to do this first, as I discovered I was only getting 2 FPS (I forgot to take a screenshot of this). This was concerning because not only should the Jetson be performing better than this, but also I was running the most lightweight COCO submodel, namely YOLO26n from the screenshot below. 
+<img width="927" height="433" alt="image" src="https://github.com/user-attachments/assets/1da1055a-c8d5-42de-b798-8b89af5c91fe" />
+
+The issue was uncovered when I tried `print(torch.cuda.get_device_name(0))` in python and it threw an error. This means the onboard GPU was not being utilised. I had to reinstall PyTorch using a specific `aarch64 jetson` wheel from the Jetson AI Lab. This also required me to find out how to install cuSPARSELt and libcudss as they were key dependencies. This is a key tradeoff I'm noticing with edge AI applications, where you often have to find custom wheels for the more efficient and divergent architecture. 
+
+Once I verified the PyTorch installation, I was able to get a stable ~14 FPS, as shown below.
+
+
+
+# 22/05/2026 - Mapping
+
+
+
+# 15/05/2026 - Motor Control
 
 Just sending PWM signals to the motors with no feedback technically does work, however open-loop control is not good enough for this project, and wheel odometry data is basically a need for robust SLAM. This is where the encoders become useful. They serve two purposes:
 - To measure how fast the wheels are going and feed this data into a PID control loop
