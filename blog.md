@@ -1,10 +1,12 @@
 # 11/06/2026 - Semantic Mapping
 
-<img width="1848" height="1040" alt="Screenshot from 2026-06-11 14-52-46" src="https://github.com/user-attachments/assets/6d008529-8c4b-4ad3-affd-a6550036dd2f" />
+What's especially useful in a mapping robot is a way to communicate its surroundings to humans. In real world applications, what if the signal between the robot and the operator becomes too weak to forward a full map, and instead it can only send text? Then the robot would need some way of classifying what's around it, beyond "occupied space" and "non-occupied space". It would be ideal if the robot could recognise common objects, just like a human, and then say for example "I've got a tree at 8 O'clock, a bridge at 3 O'clock". It could potentially even use these as waypoints to navigate. 
 
-<img width="644" height="575" alt="Screenshot from 2026-06-11 14-53-18" src="https://github.com/user-attachments/assets/3be783f5-234f-4be0-bb64-3da4ae4e4d32" />
+The Common Objects in Context (COCO) dataset is perfect for this application, and in the previous blog post I covered the inference using a pre-trained YOLO model. Once the depth camera has detected the objects in its RGB frame, it cross-references the corresponding depth frame to project the object's location in 3D, and publishes that as a marker. Here's a screenshot showing the implementation of it:
 
 <img width="1853" height="1047" alt="Screenshot from 2026-06-11 14-54-02" src="https://github.com/user-attachments/assets/b0d3eb2f-1dc6-4e24-974c-839efa33ea3a" />
+
+I realised that I wasn't actually publishing the class labels for the markers, so I added the text just above to marker spheres (screenshot shown below). Now, one of the labels shows "airplane", which is clearly wrong because there is no aeroplane (or image of an aeroplane) in this room. I may try to use one of the heavier models and see if that improves the accuracy. In the previous blog post you can see the screenshot from Ultralytics' website showing the performance of different YOLO26 variants. YOLO26s supposedly has a mAP 19% higher than YOLO26n, which suggests a significant increase in performance, however inference takes almost 50% longer. This will require figuring out how to get extra performance out of the Jetson.
 
 <img width="1853" height="1047" alt="Screenshot from 2026-06-11 15-50-46" src="https://github.com/user-attachments/assets/f9b9254d-31e1-4cc1-9b13-8f03af669e86" />
 
@@ -17,11 +19,11 @@ The issue was uncovered when I tried `print(torch.cuda.get_device_name(0))` in p
 
 Once I verified the PyTorch installation, I was able to get a stable ~14 FPS, as shown below.
 
-
-
 # 22/05/2026 - Mapping
 
 
+
+As you can see, the pointcloud is fairly sparse, which is not ideal. 
 
 # 15/05/2026 - Motor Control
 
@@ -67,12 +69,9 @@ $$
 
 <img width="990" height="416" alt="Screenshot from 2026-05-13 21-10-37" src="https://github.com/user-attachments/assets/786398bc-e353-43be-bffa-7464bfd88160" />
 
-I also needed to write the control loop on the Teensy. With `#include <Encoders.h>` I can instantiate encoders, then use the `.read()` function instead of dealing with interrupts in the code.
+I also needed to write the control loop on the Teensy. With `#include <Encoders.h>` I can instantiate encoders, then use the `.read()` function instead of dealing with interrupts in the code. 
 
-
-
-
-
+> Note: If interrupts were to be used, this would require using an Atomic Block to prevent interrupting the variable update phase of the PID control loop. I imagine this is how the source code for the library's `read()` function looks.
 
 
 # 05/05/2026 - Serial comms
