@@ -13,7 +13,15 @@ The goal is to autonomously map a room in 3D and I plan to experiment with explo
 
 ## Demos
 
+Full Demo - https://youtu.be/DSD8cMYinJs
 
+https://github.com/user-attachments/assets/7e3f203c-1132-4056-aa0b-0d33ed2588a4
+
+<img width="1853" height="1047" alt="Screenshot from 2026-06-11 14-54-02" src="https://github.com/user-attachments/assets/b0d3eb2f-1dc6-4e24-974c-839efa33ea3a" />
+
+<img width="1857" height="1004" alt="Screenshot from 2026-05-24 17-34-51" src="https://github.com/user-attachments/assets/a4f8c078-db4f-4c4c-be11-e0cb4227fc00" />
+
+https://github.com/user-attachments/assets/39cba56e-63e2-4d04-bf50-59e7ea70fac6
 
 ## Software
 
