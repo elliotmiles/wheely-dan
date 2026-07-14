@@ -19,11 +19,6 @@ The issue was uncovered when I tried `print(torch.cuda.get_device_name(0))` in p
 
 Once I verified the PyTorch installation, I was able to get a stable ~14 FPS, as shown below.
 
-# 22/05/2026 - Mapping
-
-
-
-As you can see, the pointcloud is fairly sparse, which is not ideal. 
 
 # 15/05/2026 - Motor Control
 
